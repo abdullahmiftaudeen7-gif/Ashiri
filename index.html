@@ -239,9 +239,12 @@ function memberById(id){return db.members.filter(function(m){return m.id===id})[
 function mSpins(m){return m.spins||[]}
 function allowedSpins(m){return Math.max(1,Math.floor(m.amount/5000))}
 function spinsLeft(m){return Math.max(0,allowedSpins(m)-mSpins(m).length)}
-function takenPositions(){var s={};db.members.forEach(function(m){mSpins(m).forEach(function(x){s[x.pos]=m.id})});return s}
+function capOf(pos){var p=(db.settings.payouts||{})[pos];return Math.max(1,(p&&p.ppl)||1)}
+function holders(){var h={};db.members.forEach(function(m){mSpins(m).forEach(function(x){(h[x.pos]=h[x.pos]||[]).push(m.id)})});return h}
+function takenPositions(){var h=holders(),s={};Object.keys(h).forEach(function(k){if(h[k].length>=capOf(+k))s[k]=true});return s}
+function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.pos]=true});return s}
 function wheelNumbers(){var b={};(db.settings.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=db.settings.slots;i++)if(!b[i])out.push(i);return out}
-function payoutText(pos){var p=(db.settings.payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl)a.push('collected from '+p.ppl+(p.ppl>1?' people':' person'));return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
+function payoutText(pos){var p=(db.settings.payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
 function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span></div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
 function unreadFor(role,mid){return db.messages.filter(function(m){return !m.read&&m.from!==role&&(role==='admin'||m.mid===mid)}).length}
 
@@ -303,7 +306,7 @@ function homeView(m){
   return h;
 }
 function spinView(m){
-  var nums=wheelNumbers(),tk=takenPositions(),free=nums.filter(function(x){return !tk[x]}).length,sp=mSpins(m),left=spinsLeft(m),total=allowedSpins(m);
+  var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]}).length,sp=mSpins(m),left=spinsLeft(m),total=allowedSpins(m);
   var h='<div class="card"><h2>Spin for your number</h2><p class="muted small">The number the wheel stops on is your turn to collect. Grey numbers are already taken by other members.</p>';
   h+='<div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="680" height="680" aria-label="Spin wheel"></canvas><div class="hub">AJO</div></div>';
   h+='<p style="text-align:center"><b>'+left+' of '+total+(total>1?' spins':' spin')+' left</b><br><span class="small muted">'+naira(m.amount)+' gives '+total+(total>1?' spins':' spin')+' (₦5,000 = 1 spin)</span></p>';
@@ -359,8 +362,8 @@ function adminShell(){
   if(!s.opayNumber)h+='<div class="notice">Set your Opay account name and number in Settings so members know where to pay.</div>';
   if(ui.atab==='overview'){
     var conf=db.payments.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
-    var spun=Object.keys(takenPositions()).length;
-    h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spun</span><b class="big">'+spun+' / '+wheelNumbers().length+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
+    var hd=holders(),spun=0,spotsAll=0;wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))});
+    h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
     h+='<div class="card"><h3>Needs attention</h3>'+(pend||un?'<p>'+(pend?pend+' payment(s) waiting for confirmation. ':'')+(un?un+' unread message(s).':'')+'</p>':'<p class="muted">Nothing waiting.</p>')+'</div>';
   }
   if(ui.atab==='payments'){
@@ -392,12 +395,12 @@ function adminShell(){
     }
   }
   if(ui.atab==='payouts'){
-    var tk2=takenPositions(),bl2={};(s.blocked||[]).forEach(function(x){bl2[x]=1});
-    h+='<form class="card" data-form="payouts"><h2>Payout for each number</h2><p class="muted small">Set how much each number receives and how many people it collects from (for example, number 1 collects from 3 people). Members see this after they spin.</p>'
-     +'<div class="row" style="justify-content:flex-start"><input id="fill-a" inputmode="numeric" placeholder="Amount (₦)" style="width:130px"><input id="fill-p" inputmode="numeric" placeholder="People" style="width:90px"><button type="button" class="btn ghost sm" data-act="fillall">Fill all numbers</button></div>'
-     +'<div class="trk"><table><thead><tr><th>No.</th><th>Amount (₦)</th><th>From people</th><th>Taken by</th></tr></thead><tbody>';
+    var tk2=holders(),bl2={};(s.blocked||[]).forEach(function(x){bl2[x]=1});
+    h+='<form class="card" data-form="payouts"><h2>Payout for each number</h2><p class="muted small">Set how much each person on that number receives, and how many people share the number. For example, if number 1 is shared by 3 people, it turns grey only after 3 spins have landed on it. Leave it empty for 1 person.</p>'
+     +'<div class="row" style="justify-content:flex-start"><input id="fill-a" inputmode="numeric" placeholder="Each receives (₦)" style="width:130px"><input id="fill-p" inputmode="numeric" placeholder="People sharing" style="width:120px"><button type="button" class="btn ghost sm" data-act="fillall">Fill all numbers</button></div>'
+     +'<div class="trk"><table><thead><tr><th>No.</th><th>Each receives (₦)</th><th>People sharing</th><th>Taken by</th></tr></thead><tbody>';
     for(var pi=1;pi<=s.slots;pi++){var po=(s.payouts||{})[pi]||{};
-      h+='<tr><td><b>'+pi+'</b>'+(bl2[pi]?' <span class="pill grey">blocked</span>':'')+'</td><td><input id="po-a-'+pi+'" inputmode="numeric" style="min-width:110px" value="'+esc(po.amt||'')+'"></td><td><input id="po-p-'+pi+'" inputmode="numeric" style="min-width:64px" value="'+esc(po.ppl||'')+'"></td><td class="small muted">'+(tk2[pi]?esc((memberById(tk2[pi])||{name:'?'}).name):(bl2[pi]?'-':'Free'))+'</td></tr>';
+      h+='<tr><td><b>'+pi+'</b>'+(bl2[pi]?' <span class="pill grey">blocked</span>':'')+'</td><td><input id="po-a-'+pi+'" inputmode="numeric" style="min-width:110px" value="'+esc(po.amt||'')+'"></td><td><input id="po-p-'+pi+'" inputmode="numeric" style="min-width:64px" value="'+esc(po.ppl||'')+'"></td><td class="small muted">'+(tk2[pi]?tk2[pi].length+' of '+capOf(pi)+': '+tk2[pi].map(function(id){return esc((memberById(id)||{name:'?'}).name)}).join(', '):(bl2[pi]?'-':'Free'))+'</td></tr>';
     }
     h+='</tbody></table></div><button class="btn" type="submit">Save payouts</button></form>';
   }
@@ -428,7 +431,7 @@ function adminShell(){
 /* ---------- wheel ---------- */
 function drawWheel(){
   var cv=$('#wheel');if(!cv)return;
-  var nums=wheelNumbers(),n=nums.length,tk=takenPositions(),c=cv.getContext('2d'),S=cv.width,r=S/2;
+  var nums=wheelNumbers(),n=nums.length,tk=(me()?takenFor(me()):takenPositions()),c=cv.getContext('2d'),S=cv.width,r=S/2;
   var cs=getComputedStyle(document.documentElement),g=function(k){return cs.getPropertyValue(k).trim()||'#888'};
   var A=g('--wheel-a'),B=g('--wheel-b'),T=g('--wheel-taken'),X=g('--wheel-text'),XT=g('--wheel-text-taken');
   c.clearRect(0,0,S,S);var seg=2*Math.PI/n;
@@ -443,7 +446,7 @@ function drawWheel(){
 }
 function doSpin(){
   var m=me();if(!m||ui.spinning||spinsLeft(m)<1)return;
-  var nums=wheelNumbers(),tk=takenPositions(),free=nums.filter(function(x){return !tk[x]});
+  var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]});
   if(!free.length){toast('All numbers are taken.');return}
   var pos=free[rand(free.length)],n=nums.length,seg=360/n,k=nums.indexOf(pos);
   var jitter=(Math.random()-.5)*seg*.6,theta=360*(5+rand(3))-(k+.5)*seg+jitter;
@@ -451,7 +454,7 @@ function doSpin(){
   cv.style.transition='transform 6s cubic-bezier(.12,.6,.12,1)';
   requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
   setTimeout(function(){
-    var cur=memberById(m.id),again=takenPositions();
+    var cur=memberById(m.id),again=takenFor(cur);
     if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
     cur.spins=cur.spins||[];cur.spins.push({pos:pos,at:Date.now()});save();ui.spinning=false;render();
   },6200);
@@ -552,14 +555,14 @@ document.addEventListener('submit',function(e){
     var txt=($('#msg').value||'').trim();if(!txt)return;postMsg(txt,'');
     setTimeout(function(){var i=$('#msg');if(i)i.focus()},0);
   }else if(k==='payouts'){
-    var po2={};for(var q=1;q<=db.settings.slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;if(am||pp)po2[q]={amt:am,ppl:pp}}
-    db.settings.payouts=po2;save();render();toast('Payouts saved');
+    var po2={},bad=0;for(var q=1;q<=db.settings.slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp}}
+    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return}db.settings.payouts=po2;save();render();toast('Payouts saved');
   }else if(k==='settings'){
     var s=db.settings,slots=Math.max(2,Math.min(100,parseInt($('#s-slots').value,10)||s.slots));
-    var taken=Object.keys(takenPositions()).map(Number),mx=taken.length?Math.max.apply(null,taken):0;
+    var taken=Object.keys(holders()).map(Number),mx=taken.length?Math.max.apply(null,taken):0;
     if(slots<mx){toast('Some members already hold number '+mx+'. Reset their spins first.');return}
     var bl=[];$('#s-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=slots&&bl.indexOf(v)<0)bl.push(v)});bl.sort(function(a,b){return a-b});
-    var tkn=takenPositions(),clash=bl.filter(function(v){return tkn[v]});
+    var tkn=holders(),clash=bl.filter(function(v){return tkn[v]});
     if(clash.length){toast('Number '+clash[0]+' is already taken by a member, so it cannot be blocked.');return}
     s.blocked=bl;
     s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=$('#s-start').value||s.start;s.adminPin=$('#s-pin').value.trim()||s.adminPin;
