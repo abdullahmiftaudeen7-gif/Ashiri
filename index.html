@@ -216,6 +216,12 @@ function cycleState(mid,k){
 function legendHTML(){
   return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid 1 to 5 days late (11 to 15, 21 to 25): yellow</span><span><i class="dotc r"></i> Paid 6 or more days late (16 onward, 26 onward): red</span></div>';
 }
+function redCycles(m){return cyclesFor(m).filter(function(k){return cycleState(m.id,k).c==='red'})}
+function onHold(m){return !m.released&&redCycles(m).length>0}
+function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redCycles(m).map(dueLabel).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
+function protocolHTML(){
+  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you get <b>green</b>. Pay 1 to 5 days late and you get <b>yellow</b>. Pay 6 or more days late (from the 16th for the 10th) and you get <b>red</b>.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
+}
 function scheduleCard(m){
   var cs=cyclesFor(m).slice(-5).reverse();
   return '<div class="card"><h3>Collection dates</h3><p class="muted small">Contribution is collected every 10 days: the 10th, 20th and 30th.</p><div class="list">'
@@ -245,7 +251,7 @@ function takenPositions(){var h=holders(),s={};Object.keys(h).forEach(function(k
 function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.pos]=true});return s}
 function wheelNumbers(){var b={};(db.settings.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=db.settings.slots;i++)if(!b[i])out.push(i);return out}
 function payoutText(pos){var p=(db.settings.payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
-function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span></div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
+function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span>'+((me()&&onHold(me()))?'<br><span class="pill red">Receiving on hold</span>':'')+'</div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
 function unreadFor(role,mid){return db.messages.filter(function(m){return !m.read&&m.from!==role&&(role==='admin'||m.mid===mid)}).length}
 
 /* ---------- views ---------- */
@@ -266,12 +272,13 @@ function authView(){
      +'<div class="field"><label for="r-amt">Amount you will contribute</label><select id="r-amt" name="amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+'</option>'}).join('')+'</select><span class="small muted">Starts at ₦5,000 and goes up by ₦5,000.</span></div>'
      +'<p class="label" style="margin-top:4px">Where should we send your money on your turn?</p>'+acctFields('r',null)
      +'<div class="field"><label for="r-pin">Create a 4-digit PIN for login</label><input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="\\d{4}" maxlength="4" required autocomplete="new-password"></div>'
-     +'<button class="btn" type="submit">Create my account</button></form>';
+     +'<label style="display:flex;gap:10px;align-items:flex-start;font-size:13px"><input type="checkbox" id="r-agree" required style="width:22px;min-height:22px;margin-top:1px"><span>I have read the rules. I understand that any red on my list puts my ajo receiving on hold.</span></label><button class="btn" type="submit">Create my account</button></form>';
   }else{
     h+='<form class="card" data-form="login"><div class="field"><label for="l-phone">Phone number</label><input id="l-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel"></div>'
      +'<div class="field"><label for="l-pin">4-digit PIN</label><input id="l-pin" name="pin" type="password" inputmode="numeric" maxlength="4" required autocomplete="current-password"></div>'
      +'<button class="btn" type="submit">Log in</button></form>';
   }
+  h+=protocolHTML();
   h+='<p class="small muted" style="text-align:center">Organiser? <button class="link" data-act="adminlogin" style="all:unset;cursor:pointer;font-weight:700;color:var(--brand);text-decoration:underline">Admin login</button></p>';
   if(ui.auth==='admin'){}
   return h+'</div>';
@@ -292,9 +299,9 @@ function homeView(m){
   var mine=db.payments.filter(function(p){return p.mid===m.id});
   var conf=mine.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
   var pend=mine.filter(function(p){return p.status==='pending'}).length;
-  var h='<div class="card"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span></div>';
+  var h=(onHold(m)?holdBanner(m):'')+'<div class="card"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span></div>';
   h+='<div class="grid2"><div class="stat"><span class="label">Paid so far</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Awaiting check</span><b class="big" style="font-size:22px">'+pend+'</b></div></div>';
-  h+=scheduleCard(m);
+  h+=scheduleCard(m);h+=protocolHTML();
   h+=payoutCard(m);
   h+='<div class="card"><h2>Make a payment</h2><p class="muted small">Transfer to this Opay account, then tell us here so the admin can confirm it.</p>'+payBlock(m)
    +'<form data-form="pay">'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent</label><select id="p-amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'"'+(a===m.amount?' selected':'')+'>'+naira(a)+'</option>'}).join('')+'</select></div>'
@@ -364,7 +371,7 @@ function adminShell(){
     var conf=db.payments.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
     var hd=holders(),spun=0,spotsAll=0;wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))});
     h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
-    h+='<div class="card"><h3>Needs attention</h3>'+(pend||un?'<p>'+(pend?pend+' payment(s) waiting for confirmation. ':'')+(un?un+' unread message(s).':'')+'</p>':'<p class="muted">Nothing waiting.</p>')+'</div>';
+    h+='<div class="card"><h3>Needs attention</h3>'+(pend||un||db.members.some(onHold)?'<p>'+(pend?pend+' payment(s) waiting for confirmation. ':'')+(un?un+' unread message(s). ':'')+(db.members.some(onHold)?db.members.filter(onHold).length+' member(s) have red, so their payout is on hold.':'')+'</p>':'<p class="muted">Nothing waiting.</p>')+'</div>';
   }
   if(ui.atab==='payments'){
     var ps=db.payments.slice().sort(function(a,b){return (a.status==='pending'?0:1)-(b.status==='pending'?0:1)||b.at-a.at});
@@ -377,7 +384,7 @@ function adminShell(){
   }
   if(ui.atab==='members'){
     h+='<div class="card"><h2>Members</h2>'+(db.members.length?'<div class="list">'+db.members.map(function(m){
-      return '<div class="item"><div><b>'+esc(m.name)+'</b><br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span></div><div style="text-align:right"><div class="amt">'+naira(m.amount)+'</div><span class="small muted">'+(mSpins(m).length?'Numbers '+mSpins(m).map(function(x){return '#'+x.pos}).join(', '):'Not spun')+' ('+mSpins(m).length+'/'+allowedSpins(m)+' spins)</span>'+(mSpins(m).length?'<br><button class="btn ghost sm" data-act="resetspin" data-id="'+m.id+'" style="margin-top:6px">Reset spins</button>':'')+'</div></div>';
+      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHold(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHold(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redCycles(m).map(dueLabel).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right"><div class="amt">'+naira(m.amount)+'</div><span class="small muted">'+(mSpins(m).length?'Numbers '+mSpins(m).map(function(x){return '#'+x.pos}).join(', '):'Not spun')+' ('+mSpins(m).length+'/'+allowedSpins(m)+' spins)</span>'+(mSpins(m).length?'<br><button class="btn ghost sm" data-act="resetspin" data-id="'+m.id+'" style="margin-top:6px">Reset spins</button>':'')+'</div></div>';
     }).join('')+'</div>':'<p class="empty">No members yet. Share the link so people can register.</p>')+'</div>';
   }
   if(ui.atab==='messages'){
@@ -407,7 +414,7 @@ function adminShell(){
   if(ui.atab==='tracker'){
     var cs=allCycles().slice(-6);
     h+='<div class="card"><h2>Payment tracker</h2>'+legendHTML()+(db.members.length?'<div class="trk"><table><thead><tr><th>Member</th>'+cs.map(function(k){return '<th>'+dueLabel(k).replace(/ \d{4}$/,'')+'</th>'}).join('')+'</tr></thead><tbody>'
-     +db.members.map(function(mb){var rd=dnOf(mb.created);return '<tr><td><b>'+esc(mb.name)+'</b></td>'+cs.map(function(k){
+     +db.members.map(function(mb){var rd=dnOf(mb.created);return '<tr><td><b>'+esc(mb.name)+'</b>'+(onHold(mb)?'<br><span class="pill red">On hold</span>':'')+'</td>'+cs.map(function(k){
         if(keyDn(k)<rd)return '<td class="muted">-</td>';var s=cycleState(mb.id,k);
         return '<td><div><i class="dotc '+s.d+'"></i><span class="small muted">'+esc(s.paid?s.t:(s.d==='n'?'':s.t))+'</span></div></td>'}).join('')+'</tr>'}).join('')
      +'</tbody></table></div>':'<p class="empty">No members yet.</p>')+'</div>';
@@ -511,6 +518,7 @@ document.addEventListener('click',function(e){
   else if(a==='tab'){ui.tab=v;render()}
   else if(a==='atab'){ui.atab=v;ui.thread=null;render()}
   else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=db.settings.slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
+  else if(a==='release'){var rm=memberById(id);if(rm){rm.released=!rm.released;save();render()}}
   else if(a==='editacct'){ui.editAcct=!ui.editAcct;render()}
   else if(a==='spin'){doSpin()}
   else if(a==='openchat'){ui.chat=true;render()}
