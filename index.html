@@ -201,8 +201,8 @@ function payDue(p){
 function timing(p){
   var late=dnOf(p.at)-keyDn(payDue(p));
   if(late<=0)return{c:'green',d:'g',t:'On time'};
-  if(late<=5)return{c:'yellow',d:'y',t:late+(late>1?' days':' day')+' late'};
-  return{c:'red',d:'r',t:late+' days late'};
+  if(late<=5)return{c:'yellow',d:'y',t:'Yellow'};
+  return{c:'red',d:'r',t:'Late · '+late+' days'};
 }
 function tagHTML(p){var t=timing(p);return '<span class="pill '+t.c+'">For '+dueLabel(payDue(p))+' · '+t.t+'</span>'}
 function cycleState(mid,k){
@@ -214,13 +214,13 @@ function cycleState(mid,k){
   return{c:'red',d:'r',t:'Not paid',paid:false};
 }
 function legendHTML(){
-  return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid 1 to 5 days late (11 to 15, 21 to 25): yellow</span><span><i class="dotc r"></i> Paid 6 or more days late (16 onward, 26 onward): red</span></div>';
+  return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid on the 11th to 15th (21st to 25th): marked yellow</span><span><i class="dotc r"></i> Paid from the 16th (26th) onward: late, marked red</span></div>';
 }
 function redCycles(m){return cyclesFor(m).filter(function(k){return cycleState(m.id,k).c==='red'})}
 function onHold(m){return !m.released&&redCycles(m).length>0}
 function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redCycles(m).map(dueLabel).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
 function protocolHTML(){
-  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you get <b>green</b>. Pay 1 to 5 days late and you get <b>yellow</b>. Pay 6 or more days late (from the 16th for the 10th) and you get <b>red</b>.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
+  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
 }
 function scheduleCard(m){
   var cs=cyclesFor(m).slice(-5).reverse();
