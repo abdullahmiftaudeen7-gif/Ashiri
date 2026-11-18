@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Ashiri International Contribution is a Nigerian ajo savings group. Register, pay on the 10th, 20th and 30th, spin for your payout number and track your payments."><meta name="robots" content="index,follow"><meta name="theme-color" content="#0E5A3F">
+<meta property="og:type" content="website"><meta property="og:title" content="Ashiri International Contribution"><meta property="og:description" content="Ashiri International Contribution is a Nigerian ajo savings group. Register, pay on the 10th, 20th and 30th, spin for your payout number and track your payments.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Ashiri International Contribution</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
 /* Layout: single centred column, bottom tab bar for members, top tabs for admin, floating message button */
@@ -35,7 +39,7 @@ h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em}
 h2{font-size:21px;font-weight:700}
 h3{font-size:16px;font-weight:700}
 p{margin:0}
-button,input,select{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:16px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:18px;min-width:0}
@@ -55,11 +59,12 @@ button,input,select{font:inherit;color:inherit}
 .btn.sm{padding:8px 12px;min-height:36px;font-size:13px}
 .btn.bad{background:var(--bad-bg);color:var(--bad)}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
-button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 form{display:flex;flex-direction:column;gap:12px}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-weight:700;font-size:13px}
-input,select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px;width:100%}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px;width:100%}
+textarea{resize:vertical;min-height:96px}
 .err{background:var(--bad-bg);color:var(--bad);padding:10px 12px;border-radius:10px;font-size:14px}
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
 .seg button{border:0;background:transparent;padding:10px;border-radius:9px;font-weight:700;cursor:pointer;color:var(--muted)}
@@ -129,12 +134,21 @@ input,select{background:var(--bg);border:1px solid var(--line);border-radius:10p
 .empty{color:var(--muted);text-align:center;padding:18px 8px}
 .notice{background:var(--warn-bg);color:var(--warn);padding:10px 12px;border-radius:10px;font-size:14px}
 a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;display:grid;place-items:center;padding:16px}
+.modal .box{background:var(--surface);border-radius:16px;padding:20px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px;border-top:6px solid var(--gold);max-height:85%;overflow-y:auto}
+.banner{max-width:640px;margin:12px auto 0}
+.foot{max-width:640px;margin:20px auto 0;text-align:center;font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<div id="app"></div>
+</head><body>
+<div id="app"><div style="padding:24px 16px;max-width:640px;margin:0 auto"><h1 style="font-size:26px;margin:0 0 8px">ASHIRI INTERNATIONAL CONTRIBUTION</h1><p style="margin:0">Ajo savings group in Nigeria. Contribute every 10 days (the 10th, 20th and 30th) and collect your payout on your turn.</p></div></div>
+<noscript><p style="padding:16px">Please turn on JavaScript to use the Ashiri International Contribution website.</p></noscript>
 <div id="toast" class="toast" hidden></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 (function(){
 'use strict';
@@ -171,11 +185,19 @@ function naira(n){return '₦'+Number(n).toLocaleString('en-NG')}
 function fmt(t){return new Intl.DateTimeFormat('en-NG',{timeZone:'Africa/Lagos',day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(t))}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function rand(n){var b=new Uint32Array(1);(window.crypto||{getRandomValues:function(x){x[0]=Math.floor(Math.random()*4294967296)}}).getRandomValues(b);return b[0]%n}
-function fresh(){return{settings:{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'',opayNumber:'',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234'},members:[],payments:[],messages:[],session:null}}
+/* ---- Live database (Firebase). Keep FIREBASE_CONFIG as null to run in this-phone-only demo mode. ---- */
+var FIREBASE_CONFIG=null;
+var ADMIN_EMAIL='';
+var MEMBER_DOMAIN='@ashiri-members.com';
+var CLOUD=false,fauth=null,fs=null,unsubPub=[],unsubUser=[];
+(function(){try{if(FIREBASE_CONFIG&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);fauth=firebase.auth();fs=firebase.firestore();CLOUD=true}}catch(e){CLOUD=false}})();
+function ts(){return firebase.firestore.FieldValue.serverTimestamp()}
+function defaults(){var p=lp(Date.now());return{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,start:p.y+'-'+pad(p.m)+'-10'}}
+function fresh(){return{settings:defaults(),members:[],payments:[],messages:[],notices:[],spots:{},session:null}}
 var memStore=null;
 function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return memStore||fresh()}
-var db=load();
-(function(){var s=db.settings;if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
+var db=CLOUD?fresh():load();
+(function(){var s=db.settings;if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;db.notices=db.notices||[];db.spots=db.spots||{};if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
 /* ---- due dates: 10th, 20th, 30th (last day in February) ---- */
 function pad(n){return (n<10?'0':'')+n}
 function lp(t){var s=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t)).split('-');return{y:+s[0],m:+s[1],d:+s[2]}}
@@ -204,23 +226,29 @@ function timing(p){
   if(late<=5)return{c:'yellow',d:'y',t:'Yellow'};
   return{c:'red',d:'r',t:'Late · '+late+' days'};
 }
-function tagHTML(p){var t=timing(p);return '<span class="pill '+t.c+'">For '+dueLabel(payDue(p))+' · '+t.t+'</span>'}
+function tagHTML(p){
+  if(p.status==='pending')return '<span class="pill pending">For '+dueLabel(payDue(p))+' · Awaiting confirmation</span>';
+  if(p.status==='rejected')return '<span class="pill rejected">For '+dueLabel(payDue(p))+' · Rejected</span>';
+  var t=timing(p);return '<span class="pill '+t.c+'">For '+dueLabel(payDue(p))+' · '+t.t+'</span>';
+}
 function cycleState(mid,k){
   var ps=db.payments.filter(function(p){return p.mid===mid&&p.status!=='rejected'&&payDue(p)===k}).sort(function(a,b){return a.at-b.at});
-  if(ps.length){var t=timing(ps[0]);return{c:t.c,d:t.d,t:t.t,paid:true}}
+  var cf=ps.filter(function(p){return p.status==='confirmed'});
+  if(cf.length){var t=timing(cf[0]);return{c:t.c,d:t.d,t:t.t,paid:true}}
+  if(ps.length)return{c:'pending',d:'n',t:'Awaiting confirmation',paid:true};
   var late=dnOf(Date.now())-keyDn(k);
   if(late<=0)return{c:'grey',d:'n',t:late===0?'Due today':'Not due yet',paid:false};
   if(late<=5)return{c:'yellow',d:'y',t:'Not paid',paid:false};
   return{c:'red',d:'r',t:'Not paid',paid:false};
 }
 function legendHTML(){
-  return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid on the 11th to 15th (21st to 25th): marked yellow</span><span><i class="dotc r"></i> Paid from the 16th (26th) onward: late, marked red</span></div>';
+  return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid on the 11th to 15th (21st to 25th): marked yellow</span><span><i class="dotc r"></i> Paid from the 16th (26th) onward: late, marked red</span><span><i class="dotc n"></i> Sent but not confirmed yet: no colour until the admin confirms</span></div>';
 }
 function redCycles(m){return cyclesFor(m).filter(function(k){return cycleState(m.id,k).c==='red'})}
 function onHold(m){return !m.released&&redCycles(m).length>0}
 function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redCycles(m).map(dueLabel).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
 function protocolHTML(){
-  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
+  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li>Your colour is marked automatically as soon as the admin confirms that your money has arrived.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
 }
 function scheduleCard(m){
   var cs=cyclesFor(m).slice(-5).reverse();
@@ -232,8 +260,8 @@ function cycleField(m){
   for(var i=0;i<cs.length;i++){var k=cs[i];if(!db.payments.some(function(p){return p.mid===m.id&&p.status!=='rejected'&&payDue(p)===k})){def=k;break}}
   return '<div class="field"><label for="p-due">Paying for which date</label><select id="p-due">'+cs.map(function(k){var paid=db.payments.some(function(p){return p.mid===m.id&&p.status!=='rejected'&&payDue(p)===k});return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+dueLabel(k)+(paid?' (already sent)':'')+'</option>'}).join('')+'</select></div>';
 }
-function save(){memStore=db;try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false}}
-var ui={auth:'register',tab:'home',chat:false,atab:'overview',thread:null,draft:'',err:'',recording:false,spinning:false};
+function save(){if(CLOUD)return true;memStore=db;try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false}}
+var ui={auth:'register',tab:'home',chat:false,atab:'overview',thread:null,draft:'',err:'',recording:false,spinning:false,booting:CLOUD,cloudErr:'',dirty:false,seenAt:null,rd:{},settingsMissing:false};
 var rec=null,recTimer=null;
 
 function me(){return db.session&&db.session.role==='member'?db.members.filter(function(m){return m.id===db.session.memberId})[0]:null}
@@ -246,12 +274,77 @@ function mSpins(m){return m.spins||[]}
 function allowedSpins(m){return Math.max(1,Math.floor(m.amount/5000))}
 function spinsLeft(m){return Math.max(0,allowedSpins(m)-mSpins(m).length)}
 function capOf(pos){var p=(db.settings.payouts||{})[pos];return Math.max(1,(p&&p.ppl)||1)}
-function holders(){var h={};db.members.forEach(function(m){mSpins(m).forEach(function(x){(h[x.pos]=h[x.pos]||[]).push(m.id)})});return h}
+function holders(){if(CLOUD){var hc={};Object.keys(db.spots||{}).forEach(function(k){if((db.spots[k]||[]).length)hc[k]=db.spots[k]});return hc}var h={};db.members.forEach(function(m){mSpins(m).forEach(function(x){(h[x.pos]=h[x.pos]||[]).push(m.id)})});return h}
 function takenPositions(){var h=holders(),s={};Object.keys(h).forEach(function(k){if(h[k].length>=capOf(+k))s[k]=true});return s}
 function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.pos]=true});return s}
 function wheelNumbers(){var b={};(db.settings.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=db.settings.slots;i++)if(!b[i])out.push(i);return out}
 function payoutText(pos){var p=(db.settings.payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
 function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span>'+((me()&&onHold(me()))?'<br><span class="pill red">Receiving on hold</span>':'')+'</div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
+function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,cycle:s.cycle,spinOpen:!!s.spinOpen,v2:1}}
+function pushSettings(){if(!CLOUD){save();return Promise.resolve()}return fs.doc('settings/main').set(pubSettings()).catch(function(){toast('Could not save. Check your internet.')})}
+function updMember(id,patch){
+  if(CLOUD){fs.collection('members').doc(id).update(patch).catch(function(){toast('Could not save. Check your internet.')});return}
+  var mm=memberById(id);if(mm){Object.keys(patch).forEach(function(k){mm[k]=patch[k]});save()}
+}
+function readSeen(){try{return Number(localStorage.getItem('ajo_notice_seen_at'))||0}catch(e){return 0}}
+function markSeen(at){ui.seenAt=at;try{localStorage.setItem('ajo_notice_seen_at',String(at))}catch(e){}}
+function sortedNotices(){return (db.notices||[]).slice().sort(function(a,b){return b.at-a.at})}
+function noticePopup(){
+  var n=sortedNotices()[0];if(!n)return '';
+  if(ui.seenAt===null)ui.seenAt=readSeen();
+  if(n.at<=ui.seenAt)return '';
+  return '<div class="modal" role="dialog" aria-modal="true" aria-label="Notice from admin"><div class="box"><span class="label">Notice from admin</span>'+(n.title?'<h2>'+esc(n.title)+'</h2>':'')+'<p style="white-space:pre-wrap">'+esc(n.text)+'</p><span class="small muted">'+fmt(n.at)+'</span><button class="btn" data-act="seen" data-id="'+n.at+'">Got it</button></div></div>';
+}
+function noticeBoard(){
+  var n=sortedNotices().slice(0,4);if(!n.length)return '';
+  return '<div class="card"><h3>Notice board</h3><div class="list">'+n.map(function(x){return '<div class="item"><div>'+(x.title?'<b>'+esc(x.title)+'</b><br>':'')+'<span style="white-space:pre-wrap">'+esc(x.text)+'</span><br><span class="small muted">'+fmt(x.at)+'</span></div></div>'}).join('')+'</div></div>';
+}
+function delNotice(id){
+  if(CLOUD){fs.collection('notices').doc(id).delete().catch(function(){toast('Could not delete.')});return}
+  db.notices=db.notices.filter(function(x){return x.id!==id});save();render();
+}
+function spinSwitch(){
+  var on=!!db.settings.spinOpen;
+  return '<div class="card" style="'+(on?'border-color:var(--ok)':'')+'"><div class="row"><div><span class="label">Member spinning</span><br><b style="font-size:20px;color:'+(on?'var(--ok)':'var(--bad)')+'">'+(on?'OPEN':'CLOSED')+'</b></div><button class="btn '+(on?'bad':'gold')+'" data-act="togglespin">'+(on?'Close spinning':'Open spinning')+'</button></div><p class="small muted">'+(on?'Members can spin now.':'Members can see the wheel but cannot spin until you open it.')+'</p></div>';
+}
+function authMsg(er,admin){
+  var c=(er&&er.code)||'';
+  if(c==='auth/email-already-in-use')return 'This phone number is already registered. Please log in.';
+  if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'||c==='auth/invalid-email')return admin?'Email or password is not correct.':'Phone number or PIN is not correct.';
+  if(c==='auth/too-many-requests')return 'Too many tries. Please wait a few minutes and try again.';
+  if(c==='auth/network-request-failed')return 'No internet connection. Please try again.';
+  if(c==='permission-denied')return 'The database rules are not published yet. Please tell the admin.';
+  return 'Something went wrong ('+(c||'unknown')+'). Please try again.';
+}
+function normDoc(d){var o=d.data({serverTimestamps:'estimate'})||{};Object.keys(o).forEach(function(k){var v=o[k];if(v&&typeof v.toMillis==='function')o[k]=v.toMillis()});o.id=d.id;return o}
+function stopAll(a){while(a.length){try{a.pop()()}catch(e){}}}
+function onErr(e){console.error(e);ui.cloudErr=(e&&e.code==='permission-denied')?'The database rules are not published yet, or this account is not allowed to see this.':'Could not reach the database. Check your internet.';softRender()}
+function startPublic(){
+  unsubPub.push(fs.doc('settings/main').onSnapshot(function(d){
+    db.settings=Object.assign(defaults(),d.exists?d.data():{});db.settings.cycle='Every 10 days';if(!db.settings.opayNumber){db.settings.opayName=defaults().opayName;db.settings.opayNumber=defaults().opayNumber}
+    ui.settingsMissing=!d.exists;if(!d.exists&&isAdmin())pushSettings();
+    ui.cloudErr='';softRender();
+  },onErr));
+  unsubPub.push(fs.collection('notices').onSnapshot(function(q){db.notices=q.docs.map(normDoc);softRender()},onErr));
+}
+function startUser(u){
+  stopAll(unsubUser);db.members=[];db.payments=[];db.messages=[];db.spots={};
+  var admin=!!(ADMIN_EMAIL&&u.email&&u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase());
+  db.session=admin?{role:'admin'}:{role:'member',memberId:u.uid};
+  var C=function(n){return fs.collection(n)};
+  var listen=function(ref,fn){unsubUser.push(ref.onSnapshot(function(q){fn(q);softRender()},onErr))};
+  if(admin){
+    if(ui.settingsMissing)pushSettings();
+    listen(C('members'),function(q){db.members=q.docs.map(normDoc)});
+    listen(C('payments'),function(q){db.payments=q.docs.map(normDoc)});
+    listen(C('messages'),function(q){db.messages=q.docs.map(normDoc)});
+  }else{
+    listen(C('members').doc(u.uid),function(d){db.members=d.exists?[normDoc(d)]:[]});
+    listen(C('payments').where('mid','==',u.uid),function(q){db.payments=q.docs.map(normDoc)});
+    listen(C('messages').where('mid','==',u.uid),function(q){db.messages=q.docs.map(normDoc)});
+  }
+  listen(C('spots'),function(q){var o={};q.forEach(function(d){o[d.id]=d.data().holders||[]});db.spots=o});
+}
 function unreadFor(role,mid){return db.messages.filter(function(m){return !m.read&&m.from!==role&&(role==='admin'||m.mid===mid)}).length}
 
 /* ---------- views ---------- */
@@ -263,6 +356,7 @@ function authView(){
   var s=db.settings;
   var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(s.group)+'</b></div></div>';
   h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th.</p></div>';
+  h+=noticeBoard();
   h+='<div class="seg"><button data-act="auth" data-v="register" class="'+(ui.auth==='register'?'on':'')+'">Register</button><button data-act="auth" data-v="login" class="'+(ui.auth==='login'?'on':'')+'">Log in</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
   if(ui.auth==='register'){
@@ -271,24 +365,23 @@ function authView(){
      +'<div class="field"><label for="r-phone">Phone number</label><input id="r-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="08012345678"></div>'
      +'<div class="field"><label for="r-amt">Amount you will contribute</label><select id="r-amt" name="amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+'</option>'}).join('')+'</select><span class="small muted">Starts at ₦5,000 and goes up by ₦5,000.</span></div>'
      +'<p class="label" style="margin-top:4px">Where should we send your money on your turn?</p>'+acctFields('r',null)
-     +'<div class="field"><label for="r-pin">Create a 4-digit PIN for login</label><input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="\\d{4}" maxlength="4" required autocomplete="new-password"></div>'
+     +'<div class="field"><label for="r-pin">Create a 6-digit PIN for login</label><input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="\\d{6}" maxlength="6" required autocomplete="new-password"></div>'
      +'<label style="display:flex;gap:10px;align-items:flex-start;font-size:13px"><input type="checkbox" id="r-agree" required style="width:22px;min-height:22px;margin-top:1px"><span>I have read the rules. I understand that any red on my list puts my ajo receiving on hold.</span></label><button class="btn" type="submit">Create my account</button></form>';
   }else{
     h+='<form class="card" data-form="login"><div class="field"><label for="l-phone">Phone number</label><input id="l-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel"></div>'
-     +'<div class="field"><label for="l-pin">4-digit PIN</label><input id="l-pin" name="pin" type="password" inputmode="numeric" maxlength="4" required autocomplete="current-password"></div>'
+     +'<div class="field"><label for="l-pin">6-digit PIN</label><input id="l-pin" name="pin" type="password" inputmode="numeric" maxlength="6" required autocomplete="current-password"></div>'
      +'<button class="btn" type="submit">Log in</button></form>';
   }
   h+=protocolHTML();
-  h+='<p class="small muted" style="text-align:center">Organiser? <button class="link" data-act="adminlogin" style="all:unset;cursor:pointer;font-weight:700;color:var(--brand);text-decoration:underline">Admin login</button></p>';
-  if(ui.auth==='admin'){}
   return h+'</div>';
 }
 function adminLoginView(){
   var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(db.settings.group)+' Admin</b></div><button class="btn ghost sm" data-act="auth" data-v="login">Back</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
-  h+='<form class="card" data-form="admin"><h2>Admin login</h2><div class="field"><label for="a-pin">Admin PIN</label><input id="a-pin" name="pin" type="password" inputmode="numeric" required autocomplete="current-password"></div><button class="btn" type="submit">Enter</button></form></div>';
+  h+=CLOUD?'<form class="card" data-form="admin"><h2>Admin login</h2><div class="field"><label for="a-email">Admin email</label><input id="a-email" name="email" type="email" required autocomplete="username"></div><div class="field"><label for="a-pw">Password</label><input id="a-pw" name="pw" type="password" required autocomplete="current-password"></div><button class="btn" type="submit">Enter</button></form></div>':'<form class="card" data-form="admin"><h2>Admin login</h2><div class="field"><label for="a-pin">Admin PIN</label><input id="a-pin" name="pin" type="password" inputmode="numeric" required autocomplete="current-password"></div><button class="btn" type="submit">Enter</button></form></div>';
   return h;
 }
+function loadingView(msg,out){return '<div class="wrap"><div class="card" style="text-align:center;padding:32px 16px;align-items:center"><b>'+esc(msg)+'</b>'+(out?'<button class="btn ghost sm" data-act="logout">Log out</button>':'')+'</div></div>'}
 function payBlock(m){
   var s=db.settings;
   if(!s.opayNumber)return '<div class="notice">Payment details are not ready yet. Please send a message to the admin.</div>';
@@ -299,7 +392,7 @@ function homeView(m){
   var mine=db.payments.filter(function(p){return p.mid===m.id});
   var conf=mine.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
   var pend=mine.filter(function(p){return p.status==='pending'}).length;
-  var h=(onHold(m)?holdBanner(m):'')+'<div class="card"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span></div>';
+  var h=noticeBoard()+(onHold(m)?holdBanner(m):'')+'<div class="card"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span></div>';
   h+='<div class="grid2"><div class="stat"><span class="label">Paid so far</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Awaiting check</span><b class="big" style="font-size:22px">'+pend+'</b></div></div>';
   h+=scheduleCard(m);h+=protocolHTML();
   h+=payoutCard(m);
@@ -308,8 +401,8 @@ function homeView(m){
    +'<div class="field"><label for="p-ref">Transfer reference (optional)</label><input id="p-ref" placeholder="Last digits of the Opay receipt"></div>'
    +'<button class="btn gold" type="submit">I have paid</button></form></div>';
   var sp0=mSpins(m),left0=spinsLeft(m);
-  if(sp0.length)h+='<div class="card"><span class="label">Your numbers</span>'+posList(sp0)+(left0?'<button class="btn gold" data-act="tab" data-v="spin">Spin again ('+left0+' left)</button>':'<p class="small muted">You have used all your spins.</p>')+'</div>';
-  else h+='<div class="card"><h3>You have not spun yet</h3><p class="muted small">You have '+allowedSpins(m)+(allowedSpins(m)>1?' spins':' spin')+'. Spin the wheel to find out when you collect.</p><button class="btn" data-act="tab" data-v="spin">Spin the wheel</button></div>';
+  if(sp0.length)h+='<div class="card"><span class="label">Your numbers</span>'+posList(sp0)+(left0?(db.settings.spinOpen?'<button class="btn gold" data-act="tab" data-v="spin">Spin again ('+left0+' left)</button>':'<p class="small muted">Spinning is closed right now. The admin will announce when it opens.</p>'):'<p class="small muted">You have used all your spins.</p>')+'</div>';
+  else h+='<div class="card"><h3>You have not spun yet</h3><p class="muted small">You have '+allowedSpins(m)+(allowedSpins(m)>1?' spins':' spin')+'. '+(db.settings.spinOpen?'Spin the wheel to find out when you collect.</p><button class="btn" data-act="tab" data-v="spin">Spin the wheel</button>':'Spinning opens after the first contribution is completed. The admin will announce it on the notice board.</p>')+'</div>';
   return h;
 }
 function spinView(m){
@@ -317,9 +410,10 @@ function spinView(m){
   var h='<div class="card"><h2>Spin for your number</h2><p class="muted small">The number the wheel stops on is your turn to collect. Grey numbers are already taken by other members.</p>';
   h+='<div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="680" height="680" aria-label="Spin wheel"></canvas><div class="hub">AJO</div></div>';
   h+='<p style="text-align:center"><b>'+left+' of '+total+(total>1?' spins':' spin')+' left</b><br><span class="small muted">'+naira(m.amount)+' gives '+total+(total>1?' spins':' spin')+' (₦5,000 = 1 spin)</span></p>';
-  if(left>0&&free>0)h+='<button class="btn gold" data-act="spin" id="spinbtn"'+(ui.spinning?' disabled':'')+'>Spin now</button><p class="small muted" style="text-align:center">'+free+' of '+nums.length+' numbers still open</p>';
-  else if(left>0)h+='<div class="notice">All numbers are taken. Please message the admin.</div>';
-  else h+='<p class="small muted" style="text-align:center">You have used all your spins.</p>';
+  if(left<1)h+='<p class="small muted" style="text-align:center">You have used all your spins.</p>';
+  else if(!db.settings.spinOpen)h+='<div class="notice">Spinning is not open yet. The admin opens it after the first contribution is completed. Check the notice board for the announcement.</div>';
+  else if(free>0)h+='<button class="btn gold" data-act="spin" id="spinbtn"'+(ui.spinning?' disabled':'')+'>Spin now</button><p class="small muted" style="text-align:center">'+free+' of '+nums.length+' numbers still open</p>';
+  else h+='<div class="notice">All numbers are taken. Please message the admin.</div>';
   if(sp.length)h+='<div class="result"><span class="label">'+(sp.length>1?'Your numbers':'You landed on')+'</span><span class="no" style="font-size:'+(sp.length>2?36:sp.length>1?48:64)+'px">'+sp.map(function(x){return x.pos}).join(' · ')+'</span></div>'+posList(sp);
   return h+'</div>';
 }
@@ -343,9 +437,16 @@ function composer(){
    +'<button type="submit" class="ib send" aria-label="Send">'+ICON.send+'</button>'
    +'<input type="file" id="audioFile" accept="audio/*" hidden></form>';
 }
-function threadHTML(mid,role){
+function threadInner(mid,role){
   var ms=db.messages.filter(function(m){return m.mid===mid}).sort(function(a,b){return a.at-b.at});
-  return '<div class="thread" id="thread">'+(ms.length?ms.map(function(m){return bubble(m,role)}).join(''):'<p class="empty">'+(role==='member'?'Have a question or an issue? Type a message or record a voice note for the admin.':'No messages yet.')+'</p>')+'</div>'+composer();
+  return ms.length?ms.map(function(m){return bubble(m,role)}).join(''):'<p class="empty">'+(role==='member'?'Have a question or an issue? Type a message or record a voice note for the admin.':'No messages yet.')+'</p>';
+}
+function threadHTML(mid,role){return '<div class="thread" id="thread">'+threadInner(mid,role)+'</div>'+composer()}
+function refreshThread(){
+  var th=$('#thread');if(!th)return;
+  var mid=isAdmin()?ui.thread:(me()&&me().id);if(!mid)return;
+  th.innerHTML=threadInner(mid,isAdmin()?'admin':'member');th.scrollTop=th.scrollHeight;
+  markRead(isAdmin()?'admin':'member',mid);
 }
 function chatSheet(m){
   return '<div class="sheet" data-act="closechat"><div class="panel" data-stop="1"><header><div><h3>Message admin</h3><span class="small muted">Questions, issues or payment problems</span></div><button class="btn ghost sm" data-act="closechat">Close</button></header>'+threadHTML(m.id,'member')+'</div></div>';
@@ -365,9 +466,10 @@ function memberShell(m){
 function adminShell(){
   var s=db.settings,pend=db.payments.filter(function(p){return p.status==='pending'}).length,un=unreadFor('admin');
   var h='<div class="wrap">'+topbar();
-  h+='<div class="atabs">'+[['overview','Overview',0],['payments','Payments',pend],['tracker','Tracker',0],['payouts','Numbers',0],['members','Members',0],['messages','Messages',un],['settings','Settings',0]].map(function(t){return '<button data-act="atab" data-v="'+t[0]+'" class="'+(ui.atab===t[0]?'on':'')+'">'+t[1]+(t[2]?' ('+t[2]+')':'')+'</button>'}).join('')+'</div>';
+  h+='<div class="atabs">'+[['overview','Overview',0],['notice','Notices',0],['payments','Payments',pend],['tracker','Tracker',0],['payouts','Numbers',0],['members','Members',0],['messages','Messages',un],['settings','Settings',0]].map(function(t){return '<button data-act="atab" data-v="'+t[0]+'" class="'+(ui.atab===t[0]?'on':'')+'">'+t[1]+(t[2]?' ('+t[2]+')':'')+'</button>'}).join('')+'</div>';
   if(!s.opayNumber)h+='<div class="notice">Set your Opay account name and number in Settings so members know where to pay.</div>';
   if(ui.atab==='overview'){
+    h+=spinSwitch();
     var conf=db.payments.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
     var hd=holders(),spun=0,spotsAll=0;wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))});
     h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
@@ -401,8 +503,14 @@ function adminShell(){
       }).join('')+'</div>':'<p class="empty">No messages yet.</p>')+'</div>';
     }
   }
+  if(ui.atab==='notice'){
+    h+='<form class="card" data-form="notice"><h2>Notice board</h2><p class="muted small">What you post here pops up for every member the next time they open the website. It also stays on their notice board.</p><div class="field"><label for="n-title">Title (optional)</label><input id="n-title" maxlength="80"></div><div class="field"><label for="n-text">Message</label><textarea id="n-text" rows="4" maxlength="600" required></textarea></div><button class="btn" type="submit">Post notice</button></form>';
+    var ns=sortedNotices();
+    h+='<div class="card"><h3>Posted notices</h3>'+(ns.length?'<div class="list">'+ns.map(function(x){return '<div class="item"><div>'+(x.title?'<b>'+esc(x.title)+'</b><br>':'')+'<span style="white-space:pre-wrap">'+esc(x.text)+'</span><br><span class="small muted">'+fmt(x.at)+'</span></div><button class="btn bad sm" data-act="delnotice" data-id="'+(CLOUD?x.id:x.id)+'">Delete</button></div>'}).join('')+'</div>':'<p class="empty">No notices yet.</p>')+'</div>';
+  }
   if(ui.atab==='payouts'){
     var tk2=holders(),bl2={};(s.blocked||[]).forEach(function(x){bl2[x]=1});
+    h+=spinSwitch();
     h+='<form class="card" data-form="payouts"><h2>Payout for each number</h2><p class="muted small">Set how much each person on that number receives, and how many people share the number. For example, if number 1 is shared by 3 people, it turns grey only after 3 spins have landed on it. Leave it empty for 1 person.</p>'
      +'<div class="row" style="justify-content:flex-start"><input id="fill-a" inputmode="numeric" placeholder="Each receives (₦)" style="width:130px"><input id="fill-p" inputmode="numeric" placeholder="People sharing" style="width:120px"><button type="button" class="btn ghost sm" data-act="fillall">Fill all numbers</button></div>'
      +'<div class="trk"><table><thead><tr><th>No.</th><th>Each receives (₦)</th><th>People sharing</th><th>Taken by</th></tr></thead><tbody>';
@@ -428,7 +536,7 @@ function adminShell(){
      +'<div class="field"><label for="s-block">Numbers the wheel must never land on</label><input id="s-block" placeholder="Example: 13, 7" value="'+esc((s.blocked||[]).join(', '))+'"><span class="small muted">Separate with commas. These numbers are removed from the wheel.</span></div>'
      +'<div class="field"><label for="s-cycle">Payout cycle</label><select id="s-cycle">'+['Every 10 days'].map(function(c){return '<option'+(c===s.cycle?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div>'
      +'<div class="field"><label for="s-start">First collection date (a 10th, 20th or 30th)</label><input id="s-start" type="date" value="'+esc(s.start)+'" required></div>'
-     +'<div class="field"><label for="s-pin">Admin PIN</label><input id="s-pin" inputmode="numeric" value="'+esc(s.adminPin)+'" required></div>'
+     +(CLOUD?'<p class="small muted">Your admin login is the email and password you created in Firebase.</p>':'<div class="field"><label for="s-pin">Admin PIN</label><input id="s-pin" inputmode="numeric" value="'+esc(s.adminPin)+'" required></div>')
      +'<button class="btn" type="submit">Save settings</button></form>';
   }
   h+='</div>';
@@ -451,8 +559,27 @@ function drawWheel(){
     c.fillText(String(nums[i]),r-24,0);c.restore();
   }
 }
+function cloudSpin(m,pos){
+  var sref=fs.collection('spots').doc(String(pos)),mref=fs.collection('members').doc(m.id),setr=fs.doc('settings/main'),at=Date.now();
+  return fs.runTransaction(function(t){
+    return Promise.all([t.get(sref),t.get(mref),t.get(setr)]).then(function(r){
+      var hs=(r[0].exists&&r[0].data().holders)||[],mem=r[1].data()||{},st=r[2].data()||{};
+      if(!st.spinOpen)throw 'closed';
+      var cap=Math.max(1,((st.payouts||{})[pos]||{}).ppl||1);
+      if(hs.indexOf(m.id)>-1||hs.length>=cap)throw 'taken';
+      var sp=mem.spins||[];
+      if(sp.length>=Math.max(1,Math.floor((mem.amount||0)/5000)))throw 'nospin';
+      t.set(sref,{holders:hs.concat([m.id])});
+      t.update(mref,{spins:sp.concat([{pos:pos,at:at}])});
+    });
+  }).then(function(){
+    var c=memberById(m.id);if(c&&!(c.spins||[]).some(function(x){return x.pos===pos}))c.spins=(c.spins||[]).concat([{pos:pos,at:at}]);
+    var a=db.spots[pos]||[];if(a.indexOf(m.id)<0)db.spots[pos]=a.concat([m.id]);
+  });
+}
 function doSpin(){
   var m=me();if(!m||ui.spinning||spinsLeft(m)<1)return;
+  if(!db.settings.spinOpen){toast('Spinning is not open yet.');return}
   var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]});
   if(!free.length){toast('All numbers are taken.');return}
   var pos=free[rand(free.length)],n=nums.length,seg=360/n,k=nums.indexOf(pos);
@@ -460,22 +587,34 @@ function doSpin(){
   var cv=$('#wheel');ui.spinning=true;var b=$('#spinbtn');if(b)b.disabled=true;
   cv.style.transition='transform 6s cubic-bezier(.12,.6,.12,1)';
   requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
-  setTimeout(function(){
-    var cur=memberById(m.id),again=takenFor(cur);
-    if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
-    cur.spins=cur.spins||[];cur.spins.push({pos:pos,at:Date.now()});save();ui.spinning=false;render();
-  },6200);
+  var commit=CLOUD?cloudSpin(m,pos):Promise.resolve();
+  var wait=new Promise(function(r){setTimeout(r,6200)});
+  Promise.all([commit.then(function(){return null},function(e){return e||'fail'}),wait]).then(function(r){
+    var err=r[0];
+    if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':'That number was just taken. Spin again.');render();return}
+    if(!CLOUD){
+      var cur=memberById(m.id),again=takenFor(cur);
+      if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
+      cur.spins=cur.spins||[];cur.spins.push({pos:pos,at:Date.now()});save();
+    }
+    ui.spinning=false;render();
+  });
 }
 /* ---------- messaging ---------- */
 function postMsg(text,audio){
   var role=isAdmin()?'admin':'member',mid=isAdmin()?ui.thread:(me()&&me().id);
   if(!mid)return;
+  ui.draft='';
+  if(CLOUD){
+    fs.collection('messages').add({mid:mid,from:role,text:text||'',audio:audio||'',at:ts(),read:false}).catch(function(){toast('Message not sent. Check your internet.')});
+    var mi=$('#msg');if(mi)mi.value='';return;
+  }
   db.messages.push({id:uid(),mid:mid,from:role,text:text||'',audio:audio||'',at:Date.now(),read:false});
   if(!save())toast('Storage is full. Voice note may not be kept.');
-  ui.draft='';render();
+  render();
 }
 function blobToMsg(blob){
-  if(blob.size>1500000){toast('Voice note is too long. Keep it under about one minute.');return}
+  if(blob.size>(CLOUD?600000:1500000)){toast('Voice note is too long. Keep it under about one minute.');return}
   var fr=new FileReader();fr.onload=function(){postMsg('',fr.result)};fr.readAsDataURL(blob);
 }
 function toggleRec(){
@@ -483,7 +622,7 @@ function toggleRec(){
   var fallback=function(){toast('Recording is not allowed here. Choose a voice note from your phone instead.');var f=$('#audioFile');if(f)f.click()};
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){fallback();return}
   navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
-    var mr=new MediaRecorder(st),ch=[];
+    var mr;try{mr=new MediaRecorder(st,{audioBitsPerSecond:24000})}catch(e){mr=new MediaRecorder(st)}var ch=[];
     mr.ondataavailable=function(e){if(e.data.size)ch.push(e.data)};
     mr.onstop=function(){st.getTracks().forEach(function(t){t.stop()});clearTimeout(recTimer);rec=null;ui.recording=false;blobToMsg(new Blob(ch,{type:mr.mimeType||'audio/webm'}))};
     mr.start();rec=mr;ui.recording=true;recTimer=setTimeout(function(){try{mr.stop()}catch(e){}},60000);render();
@@ -491,11 +630,23 @@ function toggleRec(){
 }
 
 /* ---------- render + events ---------- */
+function typing(){var ae=document.activeElement,ap=$('#app');return !!(ae&&ap&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)&&ap.contains(ae))}
+function softRender(){
+  if(ui.spinning||ui.recording||typing()){ui.dirty=true;refreshThread();return}
+  render();
+}
+document.addEventListener('focusout',function(){if(!ui.dirty)return;setTimeout(function(){if(ui.dirty&&!typing()&&!ui.spinning&&!ui.recording)render()},250)});
 function render(){
+  ui.dirty=false;
   var app=$('#app'),h;
-  if(isAdmin())h=adminShell();
+  if(ui.booting)h=loadingView('Loading…');
+  else if(isAdmin())h=adminShell();
   else if(me())h=memberShell(me());
+  else if(db.session)h=loadingView('Loading your account…',true);
   else h=(ui.auth==='admin')?adminLoginView():authView();
+  if(!ui.booting)h+='<footer class="foot">\u00A9 '+(new Date().getFullYear())+' '+esc(db.settings.group)+'. All rights reserved.</footer>';
+  if(!ui.booting&&!isAdmin())h+=noticePopup();
+  if(ui.cloudErr)h='<div class="banner"><div class="err" role="alert">'+esc(ui.cloudErr)+'</div></div>'+h;
   app.innerHTML=h;
   drawWheel();
   var th=$('#thread');if(th)th.scrollTop=th.scrollHeight;
@@ -503,6 +654,10 @@ function render(){
   if(isAdmin()&&ui.atab==='messages'&&ui.thread){markRead('admin',ui.thread)}
 }
 function markRead(role,mid){
+  if(CLOUD){
+    db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read&&!ui.rd[m.id]){ui.rd[m.id]=1;fs.collection('messages').doc(m.id).update({read:true}).catch(function(){delete ui.rd[m.id]})}});
+    return;
+  }
   var ch=false;db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read){m.read=true;ch=true}});
   if(ch)save();
 }
@@ -512,13 +667,16 @@ document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   if(t.classList.contains('sheet')&&e.target.closest('[data-stop]'))return;
   var a=t.dataset.act,v=t.dataset.v,id=t.dataset.id;
-  if(a==='auth'){ui.auth=v;ui.err='';db.session=null;render()}
+  if(a==='auth'){ui.auth=v;ui.err='';if((location.hash||'').toLowerCase()==='#admin'){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}render()}
   else if(a==='adminlogin'){ui.auth='admin';ui.err='';render()}
-  else if(a==='logout'){db.session=null;save();ui.chat=false;ui.auth='login';ui.err='';ui.thread=null;render()}
+  else if(a==='logout'){ui.chat=false;ui.auth=((location.hash||'').toLowerCase()==='#admin')?'admin':'login';ui.err='';ui.thread=null;ui.tab='home';if(CLOUD){fauth.signOut();return}db.session=null;save();render()}
   else if(a==='tab'){ui.tab=v;render()}
   else if(a==='atab'){ui.atab=v;ui.thread=null;render()}
   else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=db.settings.slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
-  else if(a==='release'){var rm=memberById(id);if(rm){rm.released=!rm.released;save();render()}}
+  else if(a==='release'){var rm=memberById(id);if(rm){updMember(rm.id,{released:!rm.released});render()}}
+  else if(a==='seen'){markSeen(Number(id));render()}
+  else if(a==='togglespin'){db.settings.spinOpen=!db.settings.spinOpen;pushSettings();render();toast(db.settings.spinOpen?'Spinning is now open':'Spinning is now closed')}
+  else if(a==='delnotice'){delNotice(id)}
   else if(a==='editacct'){ui.editAcct=!ui.editAcct;render()}
   else if(a==='spin'){doSpin()}
   else if(a==='openchat'){ui.chat=true;render()}
@@ -528,8 +686,10 @@ document.addEventListener('click',function(e){
   else if(a==='mic'){toggleRec()}
   else if(a==='copy'){var n=db.settings.opayNumber;
     (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(n):Promise.reject()).then(function(){toast('Account number copied')},function(){var el=$('#acctnum');if(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Number selected. Press and hold to copy.')})}
-  else if(a==='confirm'||a==='reject'){var p=db.payments.filter(function(x){return x.id===id})[0];if(p){p.status=a==='confirm'?'confirmed':'rejected';p.cat=Date.now();save();render()}}
-  else if(a==='resetspin'){var mm=memberById(id);if(mm){mm.spins=[];save();render();toast('Spin reset for '+mm.name)}}
+  else if(a==='confirm'||a==='reject'){var p=db.payments.filter(function(x){return x.id===id})[0];if(p){var stt=a==='confirm'?'confirmed':'rejected';if(CLOUD){fs.collection('payments').doc(id).update({status:stt,cat:ts()}).catch(function(){toast('Could not update. Check your internet.')});return}p.status=stt;p.cat=Date.now();save();render()}}
+  else if(a==='resetspin'){var mm=memberById(id);if(mm){
+    if(CLOUD){var bt=fs.batch();mSpins(mm).forEach(function(x){bt.update(fs.collection('spots').doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(mm.id)})});bt.update(fs.collection('members').doc(mm.id),{spins:[]});bt.commit().then(function(){toast('Spins reset for '+mm.name)},function(){toast('Could not reset. Check your internet.')});return}
+    mm.spins=[];save();render();toast('Spins reset for '+mm.name)}}
 });
 document.addEventListener('submit',function(e){
   var f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();
@@ -537,34 +697,64 @@ document.addEventListener('submit',function(e){
   if(k==='register'){
     var phone=normPhone(g('phone')),pin=g('pin');
     if(!validPhone(phone)){ui.err='Enter a valid Nigerian phone number, like 08012345678.';render();return}
-    if(!/^\d{4}$/.test(pin)){ui.err='PIN must be exactly 4 digits.';render();return}
-    if(db.members.some(function(m){return m.phone===phone})){ui.err='This phone number is already registered. Please log in.';ui.auth='login';render();return}
+    if(!/^\d{6}$/.test(pin)){ui.err='PIN must be exactly 6 digits.';render();return}
     var acno=g('acno').replace(/\s/g,'');
     if(!/^\d{10}$/.test(acno)){ui.err='Account number must be 10 digits.';render();return}
     if(!g('bank')||!g('acname')){ui.err='Choose your bank and enter the account name.';render();return}
-    var m={id:uid(),name:g('name'),location:g('loc'),phone:phone,amount:Number(g('amt')),pin:pin,created:Date.now(),spins:[],payout:{bank:g('bank'),number:acno,name:g('acname')}};
-    db.members.push(m);db.session={role:'member',memberId:m.id};save();ui.err='';ui.tab='spin';render();toast('Welcome, '+m.name.split(' ')[0]+'. Spin to get your position.');
+    var prof={name:g('name'),location:g('loc'),phone:phone,amount:Number(g('amt')),payout:{bank:g('bank'),number:acno,name:g('acname')}};
+    if(CLOUD){
+      var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
+      var cu=null;
+      fauth.createUserWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){
+        cu=c.user;
+        return fs.collection('members').doc(c.user.uid).set({name:prof.name,location:prof.location,phone:prof.phone,amount:prof.amount,created:ts(),spins:[],released:false,payout:prof.payout});
+      }).then(function(){ui.err='';ui.tab='home';toast('Welcome, '+prof.name.split(' ')[0]+'.')}).catch(function(er){
+        if(cu){cu.delete().catch(function(){});}
+        if(er&&er.code==='auth/email-already-in-use')ui.auth='login';
+        ui.err=authMsg(er);ui.booting=false;render();
+      });
+      return;
+    }
+    if(db.members.some(function(m){return m.phone===phone})){ui.err='This phone number is already registered. Please log in.';ui.auth='login';render();return}
+    var m={id:uid(),name:prof.name,location:prof.location,phone:phone,amount:prof.amount,pin:pin,created:Date.now(),spins:[],payout:prof.payout};
+    db.members.push(m);db.session={role:'member',memberId:m.id};save();ui.err='';ui.tab='home';render();toast('Welcome, '+m.name.split(' ')[0]+'.');
   }else if(k==='login'){
-    var ph=normPhone(g('phone')),mb=db.members.filter(function(x){return x.phone===ph&&x.pin===g('pin')})[0];
+    var ph=normPhone(g('phone')),lpin=g('pin');
+    if(CLOUD){fauth.signInWithEmailAndPassword(ph+MEMBER_DOMAIN,lpin).then(function(){ui.err='';ui.tab='home'}).catch(function(er){ui.err=authMsg(er);render()});return}
+    var mb=db.members.filter(function(x){return x.phone===ph&&x.pin===lpin})[0];
     if(!mb){ui.err='Phone number or PIN is not correct.';render();return}
-    db.session={role:'member',memberId:mb.id};save();ui.err='';ui.tab=mSpins(mb).length?'home':'spin';render();
+    db.session={role:'member',memberId:mb.id};save();ui.err='';ui.tab='home';render();
   }else if(k==='admin'){
+    if(CLOUD){
+      fauth.signInWithEmailAndPassword(g('email'),g('pw')).then(function(c){
+        if(!ADMIN_EMAIL||c.user.email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){ui.err='This account is not the admin.';fauth.signOut();render()}
+        else{ui.err='';ui.atab='overview'}
+      }).catch(function(er){ui.err=authMsg(er,true);render()});
+      return;
+    }
     if(g('pin')!==db.settings.adminPin){ui.err='Wrong admin PIN.';render();return}
     db.session={role:'admin'};save();ui.err='';ui.atab='overview';render();
   }else if(k==='payout'){
     var ac=g('acno').replace(/\s/g,'');
     if(!/^\d{10}$/.test(ac)){toast('Account number must be 10 digits.');return}
     if(!g('bank')||!g('acname')){toast('Choose your bank and enter the account name.');return}
-    me().payout={bank:g('bank'),number:ac,name:g('acname')};save();ui.editAcct=false;render();toast('Payout account saved');
+    updMember(me().id,{payout:{bank:g('bank'),number:ac,name:g('acname')}});ui.editAcct=false;render();toast('Payout account saved');
   }else if(k==='pay'){
-    var m2=me();db.payments.push({id:uid(),mid:m2.id,amount:Number($('#p-amt').value),ref:$('#p-ref').value.trim(),status:'pending',at:Date.now(),cat:null,due:$('#p-due').value});
-    save();ui.tab='history';render();toast('Payment recorded. The admin will confirm it.');
+    var m2=me(),pd={mid:m2.id,amount:Number($('#p-amt').value),ref:$('#p-ref').value.trim(),status:'pending',cat:null,due:$('#p-due').value};
+    if(CLOUD){pd.at=ts();fs.collection('payments').add(pd).catch(function(){toast('Payment not saved. Check your internet and try again.')})}
+    else{pd.id=uid();pd.at=Date.now();db.payments.push(pd);save()}
+    ui.tab='history';render();toast('Payment recorded. The admin will confirm it.');
   }else if(k==='send'){
     var txt=($('#msg').value||'').trim();if(!txt)return;postMsg(txt,'');
     setTimeout(function(){var i=$('#msg');if(i)i.focus()},0);
+  }else if(k==='notice'){
+    var nt=($('#n-text').value||'').trim(),ntl=($('#n-title').value||'').trim();if(!nt)return;
+    var nobj={title:ntl,text:nt};
+    if(CLOUD){nobj.at=ts();fs.collection('notices').add(nobj).then(function(){toast('Notice posted')},function(){toast('Could not post. Check your internet.')});$('#n-text').value='';$('#n-title').value=''}
+    else{nobj.id=uid();nobj.at=Date.now();db.notices.push(nobj);save();render();toast('Notice posted')}
   }else if(k==='payouts'){
-    var po2={},bad=0;for(var q=1;q<=db.settings.slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp}}
-    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return}db.settings.payouts=po2;save();render();toast('Payouts saved');
+    var po2={},bad=0;for(var q=1;q<=db.settings.slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp||1}}
+    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return}db.settings.payouts=po2;pushSettings();render();toast('Payouts saved');
   }else if(k==='settings'){
     var s=db.settings,slots=Math.max(2,Math.min(100,parseInt($('#s-slots').value,10)||s.slots));
     var taken=Object.keys(holders()).map(Number),mx=taken.length?Math.max.apply(null,taken):0;
@@ -573,12 +763,29 @@ document.addEventListener('submit',function(e){
     var tkn=holders(),clash=bl.filter(function(v){return tkn[v]});
     if(clash.length){toast('Number '+clash[0]+' is already taken by a member, so it cannot be blocked.');return}
     s.blocked=bl;
-    s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=$('#s-start').value||s.start;s.adminPin=$('#s-pin').value.trim()||s.adminPin;
-    save();render();toast('Settings saved');
+    s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=$('#s-start').value||s.start;
+    if(!CLOUD)s.adminPin=$('#s-pin').value.trim()||s.adminPin;
+    pushSettings();render();toast('Settings saved');
   }
 });
-window.addEventListener('storage',function(e){if(e.key===KEY&&!ui.recording&&!ui.spinning&&document.activeElement.tagName!=='INPUT'){db=load();render()}});
+window.addEventListener('storage',function(e){if(!CLOUD&&e.key===KEY&&!ui.recording&&!ui.spinning&&document.activeElement.tagName!=='INPUT'){db=load();render()}});
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawWheel);
+function checkHash(){
+  var adminLink=(location.hash||'').toLowerCase()==='#admin';
+  if(adminLink){if(!db.session)ui.auth='admin'}else if(ui.auth==='admin'&&!isAdmin())ui.auth='login';
+}
+window.addEventListener('hashchange',function(){checkHash();render()});
+checkHash();
+if(CLOUD){
+  startPublic();
+  fauth.onAuthStateChanged(function(u){
+    ui.booting=false;stopAll(unsubUser);ui.chat=false;ui.thread=null;
+    if(u){startUser(u)}else{db.session=null;db.members=[];db.payments=[];db.messages=[];db.spots={}}
+    render();
+  });
+  setTimeout(function(){if(ui.booting){ui.booting=false;render()}},8000);
+}
 render();
 })();
 </script>
+</body></html>
