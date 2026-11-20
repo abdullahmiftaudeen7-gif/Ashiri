@@ -228,12 +228,28 @@ var MEMBER_DOMAIN='@ashiri-members.com';
 var CLOUD=false,fauth=null,fs=null,unsubPub=[],unsubUser=[];
 (function(){try{if(FIREBASE_CONFIG&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);fauth=firebase.auth();fs=firebase.firestore();CLOUD=true}}catch(e){CLOUD=false}})();
 function ts(){return firebase.firestore.FieldValue.serverTimestamp()}
-function defaults(){var p=lp(Date.now());return{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,end:'',rounds:31,unitPayout:150000,start:p.y+'-'+pad(p.m)+'-10'}}
-function fresh(){return{settings:defaults(),members:[],payments:[],payouts:[],messages:[],notices:[],spots:{},session:null}}
+function defaults(){var p=lp(Date.now());return{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,end:'',rounds:31,unitPayout:150000,start:p.y+'-'+pad(p.m)+'-10',m:mDefaults()}}
+function fresh(){return{settings:defaults(),members:[],payments:[],payouts:[],mspots:{},messages:[],notices:[],spots:{},session:null}}
+var SC='d';
+function inS(sc,fn){var o=SC;SC=sc;try{return fn()}finally{SC=o}}
+function SSof(sc){return sc==='m'?db.settings.m:db.settings}
+function SS(){return SSof(SC)}
+function mOn(){return !!(db.settings.m&&db.settings.m.on)}
+function joined(m,sc){return sc==='m'?(mOn()&&(m.mamount||0)>0):(m.amount||0)>0}
+function amt(m){return (SC==='m'?m.mamount:m.amount)||0}
+function jd(m){return (SC==='m'?m.mjoined:m.djoined)||m.created}
+function scOf(x){return x.sch||'d'}
+function schName(sc){return sc==='m'?'Monthly':'10-day'}
+function pfx(){return SC==='m'?'Monthly #':'Contribution #'}
+function rn(k){return (mOn()?(SC==='m'?'Monthly ':'10-day '):'')+'#'+roundNo(k)}
+function collectTxt(){return SC==='m'?'Monthly contribution is collected once a month, on the 30th (the last day in February).':'Contribution is collected every 10 days: the 10th, 20th and 30th.'}
+function curAdminSc(){return (mOn()&&ui.asc==='m')?'m':'d'}
+function mDefaults(){var p=lp(Date.now()),last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate();return{on:false,start:p.y+'-'+pad(p.m)+'-'+pad(Math.min(30,last)),rounds:12,slots:12,blocked:[],payouts:{},unitPayout:150000,spinOpen:false}}
+function fixM(s){s.m=Object.assign(mDefaults(),s.m||{});if(!validMonthly(s.m.start))s.m.start=mDefaults().start;return s}
 var memStore=null;
 function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return memStore||fresh()}
 var db=CLOUD?fresh():load();
-(function(){var s=db.settings;if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;if(s.end===undefined)s.end='';fixRounds(s);db.payouts=db.payouts||[];if(!s.unitPayout)s.unitPayout=150000;db.notices=db.notices||[];db.spots=db.spots||{};if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
+(function(){var s=db.settings;if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;if(s.end===undefined)s.end='';fixRounds(s);db.payouts=db.payouts||[];if(!s.unitPayout)s.unitPayout=150000;db.notices=db.notices||[];db.spots=db.spots||{};db.mspots=db.mspots||{};fixM(s);if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
 /* ---- due dates: 10th, 20th, 30th (last day in February) ---- */
 function pad(n){return (n<10?'0':'')+n}
 function lp(t){var s=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t)).split('-');return{y:+s[0],m:+s[1],d:+s[2]}}
@@ -241,12 +257,12 @@ function dnOf(t){var p=lp(t);return Math.round(Date.UTC(p.y,p.m-1,p.d)/864e5)}
 function keyDn(k){var p=k.split('-');return Math.round(Date.UTC(+p[0],+p[1]-1,+p[2])/864e5)}
 function dueLabel(k){var p=k.split('-');return new Intl.DateTimeFormat('en-NG',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric'}).format(Date.UTC(+p[0],+p[1]-1,+p[2]))}
 function roundKeys(){
-  var s=db.settings,n=Math.max(1,Math.min(200,+s.rounds||31)),key=s.start+'|'+n;
+  var s=SS(),n=Math.max(1,Math.min(200,+s.rounds||(SC==='m'?12:31))),key=SC+s.start+'|'+n;
   if(roundKeys.c&&roundKeys.c.k===key)return roundKeys.c.v;
   var out=[],sp=s.start.split('-'),y=+sp[0],m=+sp[1],st=keyDn(s.start),g=0;
   while(out.length<n&&g++<500){
     var last=new Date(Date.UTC(y,m,0)).getUTCDate();
-    [10,20,Math.min(30,last)].forEach(function(d){var k=y+'-'+pad(m)+'-'+pad(d);if(out.length>=n||keyDn(k)<st)return;out.push(k)});
+    (SC==='m'?[Math.min(30,last)]:[10,20,Math.min(30,last)]).forEach(function(d){var k=y+'-'+pad(m)+'-'+pad(d);if(out.length>=n||keyDn(k)<st)return;out.push(k)});
     m++;if(m>12){m=1;y++}
   }
   roundKeys.c={k:key,v:out};return out;
@@ -254,7 +270,7 @@ function roundKeys(){
 function endKey(){var r=roundKeys();return r[r.length-1]||''}
 function roundNo(k){return roundKeys().indexOf(k)+1}
 function keyAtRound(n){return roundKeys()[n-1]||null}
-function cLabel(k){return 'Contribution #'+roundNo(k)+' ('+dueLabel(k)+')'}
+function cLabel(k){return pfx()+roundNo(k)+' ('+dueLabel(k)+')'}
 function fixRounds(s){
   if(!s.rounds){s.rounds=200;var e=s.end,ks=roundKeys();s.rounds=(e&&validDue(e))?(ks.filter(function(k){return k<=e}).length||31):31}
   s.end=endKey();
@@ -266,13 +282,18 @@ function cycleKeys(full){
   return out;
 }
 function allCycles(){return cycleKeys(false)}
+function validMonthly(str){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(str))return false;
+  var y=+str.slice(0,4),m=+str.slice(5,7),d=+str.slice(8),last=new Date(Date.UTC(y,m,0)).getUTCDate();
+  return d===Math.min(30,last);
+}
 function validDue(str){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(str))return false;
   var y=+str.slice(0,4),m=+str.slice(5,7),d=+str.slice(8),last=new Date(Date.UTC(y,m,0)).getUTCDate();
   return d===10||d===20||d===Math.min(30,last);
 }
-function cyclesFor(m){var rd=dnOf(m.created);return allCycles().filter(function(k){return keyDn(k)>=rd})}
-function fullCyclesFor(m){var rd=dnOf(m.created);return cycleKeys(true).filter(function(k){return keyDn(k)>=rd})}
+function cyclesFor(m){var rd=dnOf(jd(m));return allCycles().filter(function(k){return keyDn(k)>=rd})}
+function fullCyclesFor(m){var rd=dnOf(jd(m));return cycleKeys(true).filter(function(k){return keyDn(k)>=rd})}
 function payDue(p){
   if(p.due)return p.due;var cs=allCycles(),dn=dnOf(p.at),pick=cs[0];
   cs.forEach(function(k){if(keyDn(k)<=dn)pick=k});return pick;
@@ -283,21 +304,22 @@ function timing(p){
   if(late<=5)return{c:'yellow',d:'y',t:'Yellow'};
   return{c:'red',d:'r',t:'Late · '+late+' days'};
 }
-function paidSum(mid,k,confOnly){return db.payments.filter(function(p){return p.mid===mid&&p.status!=='rejected'&&payDue(p)===k&&(!confOnly||p.status==='confirmed')}).reduce(function(t,p){return t+(p.amount||0)},0)}
-function tagHTML(p){
-  var lab='For #'+roundNo(payDue(p))+' · '+dueLabel(payDue(p))+' · ';
+function paidSum(mid,k,confOnly){return db.payments.filter(function(p){return p.mid===mid&&scOf(p)===SC&&p.status!=='rejected'&&payDue(p)===k&&(!confOnly||p.status==='confirmed')}).reduce(function(t,p){return t+(p.amount||0)},0)}
+function tagHTML(p){return inS(scOf(p),function(){return tagHTML0(p)})}
+function tagHTML0(p){
+  var lab='For '+rn(payDue(p))+' · '+dueLabel(payDue(p))+' · ';
   if(p.status==='pending')return '<span class="pill pending">'+lab+'Awaiting confirmation</span>';
   if(p.status==='rejected')return '<span class="pill rejected">'+lab+'Rejected</span>';
-  var mem=memberById(p.mid),need=mem?mem.amount:5000,k=payDue(p);
-  var cf=db.payments.filter(function(x){return x.mid===p.mid&&x.status==='confirmed'&&payDue(x)===k}).sort(function(a,b){return a.at-b.at});
+  var mem=memberById(p.mid),need=mem?amt(mem):5000,k=payDue(p);
+  var cf=db.payments.filter(function(x){return x.mid===p.mid&&scOf(x)===SC&&x.status==='confirmed'&&payDue(x)===k}).sort(function(a,b){return a.at-b.at});
   var before=0;for(var i=0;i<cf.length;i++){if(cf[i].id===p.id)break;before+=cf[i].amount}
   if(before>=need)return '<span class="pill grey">'+lab+'Extra payment</span>';
   if(before+p.amount<need)return '<span class="pill grey">'+lab+'Part payment</span>';
   var t=timing(p);return '<span class="pill '+t.c+'">'+lab+t.t+'</span>';
 }
 function cycleState(mid,k){
-  var mem=memberById(mid),need=mem?mem.amount:5000;
-  var ps=db.payments.filter(function(p){return p.mid===mid&&p.status!=='rejected'&&payDue(p)===k}).sort(function(a,b){return a.at-b.at});
+  var mem=memberById(mid),need=mem?amt(mem):5000;
+  var ps=db.payments.filter(function(p){return p.mid===mid&&scOf(p)===SC&&p.status!=='rejected'&&payDue(p)===k}).sort(function(a,b){return a.at-b.at});
   var run=0,done=null;
   ps.filter(function(p){return p.status==='confirmed'}).forEach(function(p){run+=p.amount;if(done===null&&run>=need)done=p});
   if(done){var t=timing(done);return{c:t.c,d:t.d,t:t.t,paid:true}}
@@ -309,43 +331,47 @@ function cycleState(mid,k){
   return{c:'red',d:'r',t:part||'Not paid',paid:false};
 }
 function legendHTML(){
+  if(SC==='m')return '<div class="legend"><span><i class="dotc g"></i> Paid on the 30th: green</span><span><i class="dotc y"></i> Paid 1 to 5 days after the 30th: marked yellow</span><span><i class="dotc r"></i> Paid more than 5 days late, or not at all: marked red</span><span><i class="dotc n"></i> Sent but not confirmed yet: no colour until the admin confirms</span></div>';
   return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid on the 11th to 15th (21st to 25th): marked yellow</span><span><i class="dotc r"></i> Paid from the 16th (26th) onward: late, marked red</span><span><i class="dotc n"></i> Sent but not confirmed yet: no colour until the admin confirms</span></div>';
 }
 function redCycles(m){return cyclesFor(m).filter(function(k){return cycleState(m.id,k).c==='red'})}
-function onHold(m){return !m.released&&redCycles(m).length>0}
-function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redCycles(m).map(cLabel).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
+function onHold(m){return !m.released&&joined(m,SC)&&redCycles(m).length>0}
+function onHoldAny(m){return ['d','m'].some(function(sc){return inS(sc,function(){return onHold(m)})})}
+function redLabels(m){var o=[];['d','m'].forEach(function(sc){inS(sc,function(){if(joined(m,sc))redCycles(m).forEach(function(k){o.push(cLabel(k))})})});return o}
+function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redLabels(m).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
 function protocolHTML(){
-  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li>Your colour is marked automatically as soon as the admin confirms that your money has arrived.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
+  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li>'+(mOn()?'<li>The monthly contribution is collected once a month, on the 30th (last day in February). The same colours apply: paid on the day is green, 1 to 5 days late is yellow, later is red.</li>':'')+'<li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li>Your colour is marked automatically as soon as the admin confirms that your money has arrived.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
 }
 function scheduleCard(m){
   var cs=cyclesFor(m).slice(-5).reverse();
-  return '<div class="card"><h3>Collection dates</h3><p class="muted small">Contribution is collected every 10 days: the 10th, 20th and 30th.</p><div class="list">'
-   +cs.map(function(k){var s=cycleState(m.id,k);return '<div class="item"><div><b>Contribution #'+roundNo(k)+'</b><br><span class="small muted">'+dueLabel(k)+'</span></div><span class="pill '+s.c+'">'+s.t+'</span></div>'}).join('')+'</div>'+legendHTML()+'</div>';
+  return '<div class="card"><h3>Collection dates</h3><p class="muted small">'+collectTxt()+'</p><div class="list">'
+   +cs.map(function(k){var s=cycleState(m.id,k);return '<div class="item"><div><b>'+pfx()+roundNo(k)+'</b><br><span class="small muted">'+dueLabel(k)+'</span></div><span class="pill '+s.c+'">'+s.t+'</span></div>'}).join('')+'</div>'+legendHTML()+'</div>';
 }
-function focusCycle(m){var cs=cyclesFor(m);if(!cs.length)return null;for(var i=0;i<cs.length;i++){if(paidSum(m.id,cs[i],false)<m.amount)return cs[i]}return cs[cs.length-1]}
+function focusCycle(m){var cs=cyclesFor(m);if(!cs.length)return null;for(var i=0;i<cs.length;i++){if(paidSum(m.id,cs[i],false)<amt(m))return cs[i]}return cs[cs.length-1]}
 function cycleField(m){
   var cs=cyclesFor(m).slice(-8),def=focusCycle(m);
-  return '<div class="field"><label for="p-due">Paying for which contribution</label><select id="p-due">'+cs.map(function(k){var pd=paidSum(m.id,k,false);return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+cLabel(k)+(pd>=m.amount?' (fully paid)':pd>0?' (part paid)':'')+'</option>'}).join('')+'</select></div>';
+  return '<div class="field"><label for="p-due">Paying for which contribution</label><select id="p-due">'+cs.map(function(k){var pd=paidSum(m.id,k,false);return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+cLabel(k)+(pd>=amt(m)?' (fully paid)':pd>0?' (part paid)':'')+'</option>'}).join('')+'</select></div>';
 }
-function payHint(){
+function payHint(){var mm=me();if(mm)inS(memberSc(mm),payHint0)}
+function payHint0(){
   var a=$('#p-amt'),d=$('#p-due'),h=$('#p-hint'),m=me();if(!a||!d||!h||!m)return;
   var v=parseInt((a.value||'').replace(/\D/g,''),10)||0;if(!v){h.textContent='';return}
-  var left=m.amount-paidSum(m.id,d.value,false)-v;
-  h.textContent=left>0?naira(left)+' will still remain for '+cLabel(d.value)+' after this payment.':left===0?'This completes your '+naira(m.amount)+' for '+cLabel(d.value)+'.':'This is '+naira(-left)+' more than needed for '+cLabel(d.value)+'.';
+  var left=amt(m)-paidSum(m.id,d.value,false)-v;
+  h.textContent=left>0?naira(left)+' will still remain for '+cLabel(d.value)+' after this payment.':left===0?'This completes your '+naira(amt(m))+' for '+cLabel(d.value)+'.':'This is '+naira(-left)+' more than needed for '+cLabel(d.value)+'.';
   h.style.color=left>0?'var(--bad)':'var(--ok)';
 }
-function unitPay(){return db.settings.unitPayout||150000}
+function unitPay(){return SS().unitPayout||150000}
 function receiveFor(a){return Math.round(a/5000)*unitPay()}
 function receiveCard(){
   var rows=[5000,10000,15000,20000,25000,30000].map(function(a){return '<div class="item"><b>'+naira(a)+'</b><span class="amt">'+naira(receiveFor(a))+'</span></div>'}).join('');
-  return '<div class="card"><h3>What you will receive</h3><div class="row small muted"><span>You contribute</span><span>You receive</span></div><div class="list">'+rows+'</div><p class="small muted">It goes up by '+naira(unitPay())+' for every extra ₦5,000 you contribute.</p></div>';
+  return '<div class="card"><h3>What you will receive'+(mOn()?' · '+schName(SC):'')+'</h3><div class="row small muted"><span>You contribute</span><span>You receive</span></div><div class="list">'+rows+'</div><p class="small muted">It goes up by '+naira(unitPay())+' for every extra ₦5,000 you contribute.</p></div>';
 }
 function curRound(){var t=dnOf(Date.now());return roundKeys().filter(function(k){return keyDn(k)<=t}).length}
 function roundsGrid(m){
   var ks=roundKeys(),t=dnOf(Date.now()),cur=curRound();
   return '<div class="rchips" aria-label="All contributions">'+ks.map(function(k,i){
     var c='n';
-    if(m){if(keyDn(k)>=dnOf(m.created)&&keyDn(k)<=t){var st=cycleState(m.id,k);c=st.d==='g'?'g':st.d==='y'?'y':st.d==='r'?'r':st.c==='pending'?'p':'n'}}
+    if(m){if(keyDn(k)>=dnOf(jd(m))&&keyDn(k)<=t){var st=cycleState(m.id,k);c=st.d==='g'?'g':st.d==='y'?'y':st.d==='r'?'r':st.c==='pending'?'p':'n'}}
     else c=keyDn(k)<t?'past':'n';
     return '<span class="rc '+c+(i+1===cur?' cur':'')+'" title="#'+(i+1)+' · '+dueLabel(k)+'">'+(i+1)+'</span>'}).join('')+'</div>';
 }
@@ -353,35 +379,37 @@ function periodCard(m){
   var s=db.settings,today=dnOf(Date.now()),ks=roundKeys(),N=ks.length,st=keyDn(ks[0]),en=keyDn(endKey()),cur=curRound();
   var state=today<st?'Not started yet':(today>en?'Ended':'Running');
   var col=state==='Running'?'var(--ok)':state==='Ended'?'var(--bad)':'var(--warn)';
-  var big=state==='Running'?'Contribution #'+cur+' of '+N:state==='Ended'?'All '+N+' contributions done':'Starts with Contribution #1';
+  var PF=SC==='m'?'Monthly contribution #':'Contribution #',big=state==='Running'?PF+cur+' of '+N:state==='Ended'?'All '+N+' contributions done':'Starts with '+PF+'1';
   var nx=ks[cur];
-  return '<div class="card hc"><span class="label">Contribution period · '+state+'</span><b class="hbig">'+big+'</b><span class="small muted">Starts '+dueLabel(ks[0])+' · Ends '+dueLabel(endKey())+' (#'+N+')'+(nx&&state!=='Ended'?' · Next: #'+(cur+1)+' on '+dueLabel(nx):'')+'</span>'+roundsGrid(m||null)+'</div>';
+  return '<div class="card hc"><span class="label">'+(mOn()?schName(SC)+' · ':'')+'Contribution period · '+state+'</span><b class="hbig">'+big+'</b><span class="small muted">Starts '+dueLabel(ks[0])+' · Ends '+dueLabel(endKey())+' (#'+N+')'+(nx&&state!=='Ended'?' · Next: #'+(cur+1)+' on '+dueLabel(nx):'')+'</span>'+roundsGrid(m||null)+'</div>';
 }
 function progressCard(m){
   var k=focusCycle(m);if(!k)return '';
-  var conf=paidSum(m.id,k,true),all=paidSum(m.id,k,false),pend=all-conf,left=Math.max(0,m.amount-all);
-  var pc=Math.min(100,Math.round(conf*100/m.amount)),pa=Math.min(100,Math.round(all*100/m.amount));
-  var h='<div class="card"><h3>Your payment progress</h3><div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>For '+cLabel(k)+'</b><span class="small muted">'+naira(all)+' of '+naira(m.amount)+'</span></div>'
+  var conf=paidSum(m.id,k,true),all=paidSum(m.id,k,false),pend=all-conf,left=Math.max(0,amt(m)-all);
+  var pc=Math.min(100,Math.round(conf*100/amt(m))),pa=Math.min(100,Math.round(all*100/amt(m)));
+  var h='<div class="card"><h3>Your payment progress</h3><div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>For '+cLabel(k)+'</b><span class="small muted">'+naira(all)+' of '+naira(amt(m))+'</span></div>'
    +'<div class="bar" role="progressbar" aria-label="Paid for this date" aria-valuenow="'+pa+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+pc+'%"></i><i class="pend" style="width:'+Math.max(0,pa-pc)+'%"></i></div></div>';
   if(left>0)h+='<p style="color:var(--bad)"><b>'+naira(left)+' remaining.</b> <span class="muted small">Send the balance to complete this date.</span></p>';
   else h+='<p style="color:var(--ok)"><b>Paid in full for this date.</b></p>';
   if(pend>0)h+='<p class="small muted">'+naira(pend)+' of what you sent is waiting for the admin to confirm.</p>';
-  var cnt=fullCyclesFor(m).length,exp=m.amount*cnt;
-  var tc=db.payments.filter(function(x){return x.mid===m.id&&x.status==='confirmed'}).reduce(function(t,x){return t+x.amount},0);
+  var cnt=fullCyclesFor(m).length,exp=amt(m)*cnt;
+  var tc=db.payments.filter(function(x){return x.mid===m.id&&scOf(x)===SC&&x.status==='confirmed'}).reduce(function(t,x){return t+x.amount},0);
   var po=exp?Math.min(100,Math.round(tc*100/exp)):0;
   h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>'+'Whole contribution'+'</b><span class="small muted">'+naira(tc)+' of '+naira(exp)+' ('+po+'%)</span></div><div class="bar" role="progressbar" aria-label="Total paid" aria-valuenow="'+po+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+po+'%"></i></div></div>';
   return h+'</div>';
 }
-function entOf(pos){var p=(db.settings.payouts||{})[pos];return (p&&p.amt)||unitPay()}
-function payoutsOf(mid){return (db.payouts||[]).filter(function(x){return x.mid===mid})}
+function entOf(pos){var p=(SS().payouts||{})[pos];return (p&&p.amt)||unitPay()}
+function payoutsOf(mid){return (db.payouts||[]).filter(function(x){return x.mid===mid&&scOf(x)===SC})}
 function paidOutFor(mid,pos){return payoutsOf(mid).filter(function(x){return pos==null||x.pos===pos}).reduce(function(t,x){return t+(x.amount||0)},0)}
 function totalPaidOut(){return (db.payouts||[]).reduce(function(t,x){return t+(x.amount||0)},0)}
 function payoutRows(){
   var rows=[],t=dnOf(Date.now());
-  db.members.forEach(function(m){mSpins(m).forEach(function(sp){
-    var ent=entOf(sp.pos),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),st;
-    if(paid>=ent)st='full';else if(due&&keyDn(due)<=t)st=paid>0?'part':'due';else st=paid>0?'part':'wait';
-    rows.push({m:m,pos:sp.pos,ent:ent,paid:paid,left:Math.max(0,ent-paid),due:due,st:st})})});
+  ['d','m'].forEach(function(sc){inS(sc,function(){
+    if(sc==='m'&&!mOn())return;
+    db.members.forEach(function(m){if(!joined(m,sc))return;mSpins(m).forEach(function(sp){
+      var ent=entOf(sp.pos),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),st;
+      if(paid>=ent)st='full';else if(due&&keyDn(due)<=t)st=paid>0?'part':'due';else st=paid>0?'part':'wait';
+      rows.push({m:m,pos:sp.pos,ent:ent,paid:paid,left:Math.max(0,ent-paid),due:due,st:st,sc:sc,hold:onHold(m)})})})})});
   return rows.sort(function(a,b){return (a.due?keyDn(a.due):1e9)-(b.due?keyDn(b.due):1e9)||a.pos-b.pos});
 }
 function rowPill(r){return r.st==='full'?'<span class="pill green">Collected in full</span>':r.st==='part'?'<span class="pill yellow">Part paid</span>':r.st==='due'?'<span class="pill pending">Due now</span>':'<span class="pill grey">Not due yet</span>'}
@@ -389,12 +417,12 @@ function barHTML(a,b){var pc=b?Math.min(100,Math.round(a*100/b)):0;return '<div 
 function myPayoutCard(m){
   var sp=mSpins(m),hist=payoutsOf(m.id).sort(function(a,b){return b.at-a.at});
   if(!sp.length&&!hist.length)return '';
-  var rows=payoutRows().filter(function(r){return r.m.id===m.id}),ent=0,paid=0;
+  var rows=payoutRows().filter(function(r){return r.m.id===m.id&&r.sc===SC}),ent=0,paid=0;
   rows.forEach(function(r){ent+=r.ent;paid+=r.paid});
   var h='<div class="card"><h3>Your payout</h3>';
   if(!rows.length)h+='<p class="muted small">Spin for your number to see when you collect.</p>';
   rows.forEach(function(r){
-    h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>Number '+r.pos+'</b>'+rowPill(r)+'</div><span class="small muted">'+(r.due?'Collects on Contribution #'+r.pos+' · '+dueLabel(r.due):'This number is after the last contribution')+'</span>'+barHTML(r.paid,r.ent)
+    h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>Number '+r.pos+'</b>'+rowPill(r)+'</div><span class="small muted">'+(r.due?'Collects on '+pfx()+r.pos+' · '+dueLabel(r.due):'This number is after the last contribution')+'</span>'+barHTML(r.paid,r.ent)
      +'<span class="small">'+(r.st==='full'?'<b style="color:var(--ok)">You have collected '+naira(r.ent)+' in full.</b>':'Collected <b>'+naira(r.paid)+'</b> of '+naira(r.ent)+' · <b>'+naira(r.left)+'</b> left')+'</span></div>';
   });
   if(onHold(m))h+='<p class="small" style="color:var(--bad)">Your payout is on hold because of red. Speak to the admin.</p>';
@@ -405,19 +433,19 @@ function adminPayPopup(){
   if(ui.adminPopSeen||!isAdmin())return '';
   var t=dnOf(Date.now()),ks=roundKeys(),rows=payoutRows().filter(function(r){return r.left>0&&r.due});
   var due=rows.filter(function(r){return keyDn(r.due)<=t});
-  var nxt=ks.filter(function(k){return keyDn(k)>t})[0],next=rows.filter(function(r){return r.due===nxt});
+  var nk={d:inS('d',function(){return roundKeys().filter(function(k){return keyDn(k)>t})[0]}),m:inS('m',function(){return roundKeys().filter(function(k){return keyDn(k)>t})[0]})},next=rows.filter(function(r){return r.due&&r.due===nk[r.sc]});
   if(!due.length&&!next.length)return '';
   function line(r){var b=r.m.payout?esc(r.m.payout.bank)+' · '+esc(r.m.payout.number)+' · '+esc(r.m.payout.name):'No bank account added';
-    return '<div class="item"><div><b>'+esc(r.m.name)+'</b> · Number '+r.pos+(onHold(r.m)?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+b+'</span></div><div style="text-align:right"><div class="amt">'+naira(r.left)+'</div><span class="small muted">'+dueLabel(r.due)+'</span></div></div>'}
+    return '<div class="item"><div><b>'+esc(r.m.name)+'</b> · Number '+r.pos+(mOn()?' · '+schName(r.sc):'')+(r.hold?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+b+'</span></div><div style="text-align:right"><div class="amt">'+naira(r.left)+'</div><span class="small muted">'+dueLabel(r.due)+'</span></div></div>'}
   var h='<div class="modal" role="dialog" aria-modal="true" aria-label="Payouts to make"><div class="box"><h2>Payouts to make</h2>';
   if(due.length)h+='<h3>Due now</h3><div class="list">'+due.map(line).join('')+'</div>';
-  if(next.length)h+='<h3>Coming next · Contribution #'+(roundNo(nxt))+'</h3><div class="list">'+next.map(line).join('')+'</div>';
+  if(next.length)h+='<h3>Coming next</h3><div class="list">'+next.map(line).join('')+'</div>';
   return h+'<button class="btn" data-act="adminpopgo">Open Paid out</button><button class="btn ghost" data-act="adminpop">Close</button></div></div>';
 }
 function removeMember(id){
   var mm=memberById(id);if(!mm)return;
   if(CLOUD){
-    var bt=fs.batch();mSpins(mm).forEach(function(x){bt.set(fs.collection('spots').doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(id)},{merge:true})});
+    var bt=fs.batch();['d','m'].forEach(function(sc){inS(sc,function(){mSpins(mm).forEach(function(x){bt.set(fs.collection(sc==='m'?'mspots':'spots').doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(id)},{merge:true})})})});
     bt.delete(fs.collection('members').doc(id));
     bt.commit().then(function(){toast(mm.name+' removed')},function(){toast('Could not remove. Check your internet.')});return;
   }
@@ -428,18 +456,18 @@ function paidOutTab(){
   var h='<div class="grid2"><div class="stat"><span class="label">To pay out (spun numbers)</span><b class="big" style="font-size:22px">'+naira(ent)+'</b></div><div class="stat"><span class="label">Paid out</span><b class="big" style="font-size:22px">'+naira(totalPaidOut())+'</b></div><div class="stat"><span class="label">Balance</span><b class="big" style="font-size:22px">'+naira(Math.max(0,ent-paid))+'</b></div><div class="stat"><span class="label">Due now</span><b class="big">'+rows.filter(function(r){return r.st==='due'||(r.st==='part'&&r.due&&keyDn(r.due)<=dnOf(Date.now()))}).length+'</b></div></div>';
   var open=rows.filter(function(r){return r.left>0});
   h+='<form class="card" data-form="paidout"><h2>Record a payout</h2><p class="muted small">Use this after you have sent money to a member. You can record part payments many times until the full amount is collected.</p>'
-   +(open.length?'<div class="field"><label for="po-pick">Member and number</label><select id="po-pick">'+open.map(function(r){var v=r.m.id+'|'+r.pos;return '<option value="'+v+'"'+(ui.payPick===v?' selected':'')+'>'+esc(r.m.name)+' · Number '+r.pos+(r.due?' · '+dueLabel(r.due):'')+' · '+naira(r.left)+' left'+(onHold(r.m)?' · ON HOLD':'')+'</option>'}).join('')+'</select></div>'
+   +(open.length?'<div class="field"><label for="po-pick">Member and number</label><select id="po-pick">'+open.map(function(r){var v=r.m.id+'|'+r.pos+'|'+r.sc;return '<option value="'+v+'"'+(ui.payPick===v?' selected':'')+'>'+esc(r.m.name)+' · '+(mOn()?schName(r.sc)+' · ':'')+'Number '+r.pos+(r.due?' · '+dueLabel(r.due):'')+' · '+naira(r.left)+' left'+(r.hold?' · ON HOLD':'')+'</option>'}).join('')+'</select></div>'
    +'<div class="field"><label for="po-amt">Amount paid (₦)</label><input id="po-amt" inputmode="numeric" required></div><div class="field"><label for="po-note">Note (optional)</label><input id="po-note" maxlength="80" placeholder="Example: sent by transfer"></div><button class="btn" type="submit">Record payout</button>':'<p class="empty">No spun numbers waiting to be paid.</p>')+'</form>';
   h+='<div class="card"><h2>Who collects</h2>'+(rows.length?'<div class="list">'+rows.map(function(r){
     var b=r.m.payout?esc(r.m.payout.bank)+' · '+esc(r.m.payout.number)+' · '+esc(r.m.payout.name):'No bank account added';
-    return '<div class="item"><div style="flex:1;min-width:0"><b>'+esc(r.m.name)+'</b> · Number '+r.pos+(onHold(r.m)?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+(r.due?'Contribution #'+r.pos+' · '+dueLabel(r.due):'After the last contribution')+'<br>'+b+'</span>'+barHTML(r.paid,r.ent)+'<span class="small">'+naira(r.paid)+' of '+naira(r.ent)+(r.left?' · '+naira(r.left)+' left':'')+'</span>'
-     +(r.left?'<div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn ghost sm" data-act="payfill" data-v="'+r.m.id+'|'+r.pos+'">Record payment</button></div>':'')+'</div><div>'+rowPill(r)+'</div></div>'}).join('')+'</div>':'<p class="empty">Nobody has spun a number yet.</p>')+'</div>';
+    return '<div class="item"><div style="flex:1;min-width:0"><b>'+esc(r.m.name)+'</b> · '+(mOn()?schName(r.sc)+' · ':'')+'Number '+r.pos+(r.hold?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+(r.due?(r.sc==='m'?'Monthly #':'Contribution #')+r.pos+' · '+dueLabel(r.due):'After the last contribution')+'<br>'+b+'</span>'+barHTML(r.paid,r.ent)+'<span class="small">'+naira(r.paid)+' of '+naira(r.ent)+(r.left?' · '+naira(r.left)+' left':'')+'</span>'
+     +(r.left?'<div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn ghost sm" data-act="payfill" data-v="'+r.m.id+'|'+r.pos+'|'+r.sc+'">Record payment</button></div>':'')+'</div><div>'+rowPill(r)+'</div></div>'}).join('')+'</div>':'<p class="empty">Nobody has spun a number yet.</p>')+'</div>';
   var hist=(db.payouts||[]).slice().sort(function(a,b){return b.at-a.at});
   h+='<div class="card"><h3>Payout history</h3>'+(hist.length?'<div class="list">'+hist.map(function(x){var m=memberById(x.mid)||{name:'Removed'};return '<div class="item"><div><b>'+esc(m.name)+'</b> · Number '+x.pos+'<br><span class="small muted">'+fmt(x.at)+(x.note?' · '+esc(x.note):'')+'</span></div><div style="text-align:right"><div class="amt">'+naira(x.amount)+'</div><button class="btn bad sm" data-act="delpayout" data-id="'+x.id+'">Undo</button></div></div>'}).join('')+'</div>':'<p class="empty">No payouts recorded yet.</p>')+'</div>';
   return h;
 }
 function save(){if(CLOUD)return true;memStore=db;try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false}}
-var ui={delAsk:'',adminPopSeen:false,payPick:'',holdOk:false,auth:'register',tab:'home',chat:false,atab:'overview',thread:null,draft:'',err:'',recording:false,spinning:false,booting:CLOUD,cloudErr:'',dirty:false,seenAt:null,rd:{},settingsMissing:false};
+var ui={sc:'d',asc:'d',delAsk:'',adminPopSeen:false,payPick:'',holdOk:false,auth:'register',tab:'home',chat:false,atab:'overview',thread:null,draft:'',err:'',recording:false,spinning:false,booting:CLOUD,cloudErr:'',dirty:false,seenAt:null,rd:{},settingsMissing:false};
 var rec=null,recTimer=null;
 
 function me(){return db.session&&db.session.role==='member'?db.members.filter(function(m){return m.id===db.session.memberId})[0]:null}
@@ -448,17 +476,17 @@ function toast(t){var el=$('#toast');el.textContent=t;el.hidden=false;clearTimeo
 function normPhone(p){var d=String(p).replace(/\D/g,'');if(d.indexOf('234')===0&&d.length===13)d='0'+d.slice(3);return d}
 function validPhone(d){return /^0[789][01]\d{8}$/.test(d)}
 function memberById(id){return db.members.filter(function(m){return m.id===id})[0]}
-function mSpins(m){return m.spins||[]}
-function allowedSpins(m){return Math.max(1,Math.floor(m.amount/5000))}
+function mSpins(m){return (SC==='m'?m.mspins:m.spins)||[]}
+function allowedSpins(m){return Math.max(1,Math.floor(amt(m)/5000))}
 function spinsLeft(m){return Math.max(0,allowedSpins(m)-mSpins(m).length)}
-function capOf(pos){var p=(db.settings.payouts||{})[pos];return Math.max(1,(p&&p.ppl)||1)}
-function holders(){if(CLOUD){var hc={};Object.keys(db.spots||{}).forEach(function(k){if((db.spots[k]||[]).length)hc[k]=db.spots[k]});return hc}var h={};db.members.forEach(function(m){mSpins(m).forEach(function(x){(h[x.pos]=h[x.pos]||[]).push(m.id)})});return h}
+function capOf(pos){var p=(SS().payouts||{})[pos];return Math.max(1,(p&&p.ppl)||1)}
+function holders(){if(CLOUD){var hc={},src=(SC==='m'?db.mspots:db.spots)||{};Object.keys(src).forEach(function(k){if((src[k]||[]).length)hc[k]=src[k]});return hc}var h={};db.members.forEach(function(m){mSpins(m).forEach(function(x){(h[x.pos]=h[x.pos]||[]).push(m.id)})});return h}
 function takenPositions(){var h=holders(),s={};Object.keys(h).forEach(function(k){if(h[k].length>=capOf(+k))s[k]=true});return s}
 function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.pos]=true});return s}
-function wheelNumbers(){var b={};(db.settings.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=db.settings.slots;i++)if(!b[i])out.push(i);return out}
-function payoutText(pos){var p=(db.settings.payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
+function wheelNumbers(){var ss=SS(),b={};(ss.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=ss.slots;i++)if(!b[i])out.push(i);return out}
+function payoutText(pos){var p=(SS().payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
 function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span>'+((me()&&onHold(me()))?'<br><span class="pill red">Receiving on hold</span>':'')+'</div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
-function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,cycle:s.cycle,spinOpen:!!s.spinOpen,v2:1}}
+function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,cycle:s.cycle,spinOpen:!!s.spinOpen,m:(function(){var M=s.m||mDefaults();return{on:!!M.on,start:M.start,rounds:+M.rounds||12,slots:+M.slots||12,blocked:M.blocked||[],payouts:M.payouts||{},unitPayout:+M.unitPayout||150000,spinOpen:!!M.spinOpen}})(),v2:1}}
 function pushSettings(){if(!CLOUD){save();return Promise.resolve()}return fs.doc('settings/main').set(pubSettings()).catch(function(){toast('Could not save. Check your internet.')})}
 function updMember(id,patch){
   if(CLOUD){fs.collection('members').doc(id).update(patch).catch(function(){toast('Could not save. Check your internet.')});return}
@@ -481,9 +509,9 @@ function delNotice(id){
   if(CLOUD){fs.collection('notices').doc(id).delete().catch(function(){toast('Could not delete.')});return}
   db.notices=db.notices.filter(function(x){return x.id!==id});save();render();
 }
-function spinSwitch(){
-  var on=!!db.settings.spinOpen;
-  return '<div class="card" style="'+(on?'border-color:var(--ok)':'')+'"><div class="row"><div><span class="label">Member spinning</span><br><b style="font-size:20px;color:'+(on?'var(--ok)':'var(--bad)')+'">'+(on?'OPEN':'CLOSED')+'</b></div><button class="btn '+(on?'bad':'gold')+'" data-act="togglespin">'+(on?'Close spinning':'Open spinning')+'</button></div><p class="small muted">'+(on?'Members can spin now.':'Members can see the wheel but cannot spin until you open it.')+'</p></div>';
+function spinSwitch(sc){
+  sc=sc||'d';var on=!!SSof(sc).spinOpen;
+  return '<div class="card" style="'+(on?'border-color:var(--ok)':'')+'"><div class="row"><div><span class="label">'+(mOn()?schName(sc)+' · ':'')+'Member spinning</span><br><b style="font-size:20px;color:'+(on?'var(--ok)':'var(--bad)')+'">'+(on?'OPEN':'CLOSED')+'</b></div><button class="btn '+(on?'bad':'gold')+'" data-act="togglespin" data-v="'+sc+'">'+(on?'Close spinning':'Open spinning')+'</button></div><p class="small muted">'+(on?'Members can spin now.':'Members can see the wheel but cannot spin until you open it.')+'</p></div>';
 }
 function authMsg(er,admin){
   var c=(er&&er.code)||'';
@@ -499,14 +527,14 @@ function stopAll(a){while(a.length){try{a.pop()()}catch(e){}}}
 function onErr(e){console.error(e);ui.cloudErr=(e&&e.code==='permission-denied')?'The database rules are not published yet, or this account is not allowed to see this.':'Could not reach the database. Check your internet.';softRender()}
 function startPublic(){
   unsubPub.push(fs.doc('settings/main').onSnapshot(function(d){
-    db.settings=Object.assign(defaults(),d.exists?d.data():{});if(d.exists&&!d.data().rounds)db.settings.rounds=0;fixRounds(db.settings);db.settings.cycle='Every 10 days';if(!db.settings.opayNumber){db.settings.opayName=defaults().opayName;db.settings.opayNumber=defaults().opayNumber}
+    db.settings=Object.assign(defaults(),d.exists?d.data():{});if(d.exists&&!d.data().rounds)db.settings.rounds=0;fixRounds(db.settings);fixM(db.settings);db.settings.cycle='Every 10 days';if(!db.settings.opayNumber){db.settings.opayName=defaults().opayName;db.settings.opayNumber=defaults().opayNumber}
     ui.settingsMissing=!d.exists;if(!d.exists&&isAdmin())pushSettings();
     ui.cloudErr='';softRender();
   },onErr));
   unsubPub.push(fs.collection('notices').onSnapshot(function(q){db.notices=q.docs.map(normDoc);softRender()},onErr));
 }
 function startUser(u){
-  stopAll(unsubUser);db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={};
+  stopAll(unsubUser);db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={};db.mspots={};
   var admin=!!(ADMIN_EMAIL&&u.email&&u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase());
   db.session=admin?{role:'admin'}:{role:'member',memberId:u.uid};
   var C=function(n){return fs.collection(n)};
@@ -524,6 +552,7 @@ function startUser(u){
     listen(C('payouts').where('mid','==',u.uid),function(q){db.payouts=q.docs.map(normDoc)});
   }
   listen(C('spots'),function(q){var o={};q.forEach(function(d){o[d.id]=d.data().holders||[]});db.spots=o});
+  listen(C('mspots'),function(q){var o={};q.forEach(function(d){o[d.id]=d.data().holders||[]});db.mspots=o});
 }
 function unreadFor(role,mid){return db.messages.filter(function(m){return !m.read&&m.from!==role&&(role==='admin'||m.mid===mid)}).length}
 
@@ -532,18 +561,23 @@ function topbar(){
   var who=me()?esc(me().name.split(' ')[0]):'Admin';
   return '<div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(db.settings.group)+'</b></div><button class="btn ghost sm" data-act="logout">Log out ('+who+')</button></div>';
 }
+function regAmounts(){
+  var on=mOn();
+  function blk(sc,id,cb){return inS(sc,function(){return '<div class="field">'+(on?'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="'+cb+'" name="'+cb+'"'+(sc==='d'?' checked':'')+' style="width:22px;min-height:22px"><span><b>'+(sc==='m'?'Monthly contribution':'10-day contribution')+'</b> <span class="small muted">'+(sc==='m'?'once a month, on the 30th':'10th, 20th and 30th')+'</span></span></label>':'<label for="'+id+'">Amount you will contribute</label>')+'<select id="'+id+'" name="'+(sc==='m'?'mamt':'amt')+'">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+' · you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select><span class="small muted">'+(on?'':'Starts at ₦5,000 and goes up by ₦5,000.')+'</span></div>'})}
+  return blk('d','r-amt','jd')+(on?blk('m','r-mamt','jm')+'<p class="small muted">You can join one or both. Each has its own amount, its own number and its own payout.</p>':'');
+}
 function authView(){
   var s=db.settings;
   var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(s.group)+'</b></div></div>';
   h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th.</p></div>';
-  h+=noticeBoard();h+=periodCard();h+=receiveCard();
+  h+=noticeBoard();h+=inS('d',function(){return periodCard()+receiveCard()})+(mOn()?inS('m',function(){return periodCard()+receiveCard()}):'');
   h+='<div class="seg"><button data-act="auth" data-v="register" class="'+(ui.auth==='register'?'on':'')+'">Register</button><button data-act="auth" data-v="login" class="'+(ui.auth==='login'?'on':'')+'">Log in</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
   if(ui.auth==='register'){
     h+='<form class="card" data-form="register" autocomplete="on"><div class="field"><label for="r-name">Full name</label><input id="r-name" name="name" required autocomplete="name"></div>'
      +'<div class="field"><label for="r-loc">Location (state)</label><input id="r-loc" name="loc" list="states" required autocomplete="address-level1" placeholder="e.g. Lagos"><datalist id="states">'+STATES.map(function(x){return '<option value="'+x+'">'}).join('')+'</datalist></div>'
      +'<div class="field"><label for="r-phone">Phone number</label><input id="r-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="08012345678"></div>'
-     +'<div class="field"><label for="r-amt">Amount you will contribute</label><select id="r-amt" name="amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+' \u00B7 you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select><span class="small muted">Starts at ₦5,000 and goes up by ₦5,000.</span></div>'
+     +regAmounts()
      +'<p class="label" style="margin-top:4px">Where should we send your money on your turn?</p>'+acctFields('r',null)
      +'<div class="field"><label for="r-pin">Create a 6-digit PIN for login</label><input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="\\d{6}" maxlength="6" required autocomplete="new-password"></div>'
      +'<label style="display:flex;gap:10px;align-items:flex-start;font-size:13px"><input type="checkbox" id="r-agree" required style="width:22px;min-height:22px;margin-top:1px"><span>I have read the rules. I understand that any red on my list puts my ajo receiving on hold.</span></label><button class="btn" type="submit">Create my account</button></form>';
@@ -569,29 +603,29 @@ function payBlock(m){
    +'<button class="btn ghost sm" data-act="copy" style="align-self:flex-start">Copy account number</button>';
 }
 function homeView(m){
-  var mine=db.payments.filter(function(p){return p.mid===m.id});
+  var mine=db.payments.filter(function(p){return p.mid===m.id&&scOf(p)===SC});
   var conf=mine.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
   var pend=mine.filter(function(p){return p.status==='pending'}).length;
-  var h=noticeBoard()+periodCard(m)+(onHold(m)?holdBanner(m):'')+'<div class="card hc"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span><span><b>You will receive '+naira(receiveFor(m.amount))+'</b></span></div>';
+  var h=noticeBoard()+periodCard(m)+(onHoldAny(m)?holdBanner(m):'')+'<div class="card hc"><span class="label">'+(mOn()?schName(SC)+' · ':'')+'Your contribution</span><span class="big">'+naira(amt(m))+'</span><span class="muted small">'+esc(SC==='m'?'Once a month':db.settings.cycle)+' · '+esc(m.location)+'</span><span><b>You will receive '+naira(receiveFor(amt(m)))+'</b></span></div>';
   h+='<div class="grid2"><div class="stat"><span class="label">Paid so far</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Awaiting check</span><b class="big" style="font-size:22px">'+pend+'</b></div></div>';
   h+=progressCard(m);h+=myPayoutCard(m);h+=scheduleCard(m);h+=protocolHTML();
   h+=payoutCard(m);
   h+='<div class="card"><h2>Make a payment</h2><p class="muted small">Transfer to this Opay account, then tell us here so the admin can confirm it.</p>'+payBlock(m)
-   +'<form data-form="pay">'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent (₦)</label><input id="p-amt" inputmode="numeric" required value="'+(Math.max(0,m.amount-paidSum(m.id,focusCycle(m),false))||m.amount)+'"><span id="p-hint" class="small"></span></div>'
+   +'<form data-form="pay">'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent (₦)</label><input id="p-amt" inputmode="numeric" required value="'+(Math.max(0,amt(m)-paidSum(m.id,focusCycle(m),false))||amt(m))+'"><span id="p-hint" class="small"></span></div>'
    +'<div class="field"><label for="p-ref">Transfer reference (optional)</label><input id="p-ref" placeholder="Last digits of the Opay receipt"></div>'
    +'<button class="btn gold" type="submit">I have paid</button></form></div>';
   var sp0=mSpins(m),left0=spinsLeft(m);
-  if(sp0.length)h+='<div class="card"><span class="label">Your numbers</span>'+posList(sp0)+(left0?(db.settings.spinOpen?'<button class="btn gold" data-act="tab" data-v="spin">Spin again ('+left0+' left)</button>':'<p class="small muted">Spinning is closed right now. The admin will announce when it opens.</p>'):'<p class="small muted">You have used all your spins.</p>')+'</div>';
-  else h+='<div class="card"><h3>You have not spun yet</h3><p class="muted small">You have '+allowedSpins(m)+(allowedSpins(m)>1?' spins':' spin')+'. '+(db.settings.spinOpen?'Spin the wheel to find out when you collect.</p><button class="btn" data-act="tab" data-v="spin">Spin the wheel</button>':'Spinning opens after the first contribution is completed. The admin will announce it on the notice board.</p>')+'</div>';
-  return h;
+  if(sp0.length)h+='<div class="card"><span class="label">Your numbers</span>'+posList(sp0)+(left0?(SS().spinOpen?'<button class="btn gold" data-act="tab" data-v="spin">Spin again ('+left0+' left)</button>':'<p class="small muted">Spinning is closed right now. The admin will announce when it opens.</p>'):'<p class="small muted">You have used all your spins.</p>')+'</div>';
+  else h+='<div class="card"><h3>You have not spun yet</h3><p class="muted small">You have '+allowedSpins(m)+(allowedSpins(m)>1?' spins':' spin')+'. '+(SS().spinOpen?'Spin the wheel to find out when you collect.</p><button class="btn" data-act="tab" data-v="spin">Spin the wheel</button>':'Spinning opens after the first contribution is completed. The admin will announce it on the notice board.</p>')+'</div>';
+  h+=joinCard(m);return h;
 }
 function spinView(m){
   var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]}).length,sp=mSpins(m),left=spinsLeft(m),total=allowedSpins(m);
   var h='<div class="card"><h2>Spin for your number</h2><p class="muted small">The number the wheel stops on is your turn to collect. Grey numbers are already taken by other members.</p>';
   h+='<div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="680" height="680" aria-label="Spin wheel"></canvas><div class="hub">AJO</div></div>';
-  h+='<p style="text-align:center"><b>'+left+' of '+total+(total>1?' spins':' spin')+' left</b><br><span class="small muted">'+naira(m.amount)+' gives '+total+(total>1?' spins':' spin')+' (₦5,000 = 1 spin)</span></p>';
+  h+='<p style="text-align:center"><b>'+left+' of '+total+(total>1?' spins':' spin')+' left</b><br><span class="small muted">'+naira(amt(m))+' gives '+total+(total>1?' spins':' spin')+' (₦5,000 = 1 spin)</span></p>';
   if(left<1)h+='<p class="small muted" style="text-align:center">You have used all your spins.</p>';
-  else if(!db.settings.spinOpen)h+='<div class="notice">Spinning is not open yet. The admin opens it after the first contribution is completed. Check the notice board for the announcement.</div>';
+  else if(!SS().spinOpen)h+='<div class="notice">Spinning is not open yet. The admin opens it after the first contribution is completed. Check the notice board for the announcement.</div>';
   else if(free>0)h+='<button class="btn gold" data-act="spin" id="spinbtn"'+(ui.spinning?' disabled':'')+'>Spin now</button><p class="small muted" style="text-align:center">'+free+' of '+nums.length+' numbers still open</p>';
   else h+='<div class="notice">All numbers are taken. Please message the admin.</div>';
   if(sp.length)h+='<div class="result"><span class="label">'+(sp.length>1?'Your numbers':'You landed on')+'</span><span class="no" style="font-size:'+(sp.length>2?36:sp.length>1?48:64)+'px">'+sp.map(function(x){return x.pos}).join(' · ')+'</span></div>'+posList(sp);
@@ -631,9 +665,16 @@ function refreshThread(){
 function chatSheet(m){
   return '<div class="sheet" data-act="closechat"><div class="panel" data-stop="1"><header><div><h3>Message admin</h3><span class="small muted">Questions, issues or payment problems</span></div><button class="btn ghost sm" data-act="closechat">Close</button></header>'+threadHTML(m.id,'member')+'</div></div>';
 }
+function memberSc(m){var a=joined(m,'d'),b=joined(m,'m');return a&&b?(ui.sc==='m'?'m':'d'):(b?'m':'d')}
+function schSwitch(m){if(!(joined(m,'d')&&joined(m,'m')))return '';var c=memberSc(m);return '<div class="seg"><button data-act="scpick" data-v="d" class="'+(c==='d'?'on':'')+'">10-day</button><button data-act="scpick" data-v="m" class="'+(c==='m'?'on':'')+'">Monthly</button></div>'}
+function ascSwitch(){if(!mOn())return '';var c=curAdminSc();return '<div class="seg"><button data-act="ascpick" data-v="d" class="'+(c==='d'?'on':'')+'">10-day</button><button data-act="ascpick" data-v="m" class="'+(c==='m'?'on':'')+'">Monthly</button></div>'}
+function joinCard(m){
+  var sc=(mOn()&&!joined(m,'m'))?'m':(!joined(m,'d')?'d':'');if(!sc)return '';
+  return inS(sc,function(){return '<form class="card" data-form="join" data-sch="'+sc+'"><h3>Join the '+schName(sc)+' contribution too</h3><p class="muted small">'+collectTxt()+' It has its own numbers and its own payout.</p><div class="field"><label for="j-amt">Amount you will contribute</label><select id="j-amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+' · you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select></div><button class="btn" type="submit">Join '+schName(sc)+'</button></form>'});
+}
 function memberShell(m){
   var h='<div class="wrap">'+topbar();
-  if(ui.tab==='home')h+=homeView(m);else if(ui.tab==='spin')h+=spinView(m);else h+=historyView(m);
+  if(ui.tab==='history')h+=historyView(m);else{h+=schSwitch(m)+inS(memberSc(m),function(){return ui.tab==='home'?homeView(m):spinView(m)})}
   h+='</div>';
   var un=unreadFor('member',m.id);
   h+='<button class="fab" data-act="openchat" aria-label="Message admin">'+ICON.chat+(un?'<span class="dot">'+un+'</span>':'')+'</button>';
@@ -643,17 +684,31 @@ function memberShell(m){
   if(ui.chat)h+=chatSheet(m);
   return h;
 }
+function memberSchemes(m){
+  return ['d','m'].map(function(sc){if(!joined(m,sc))return '';return inS(sc,function(){var sp=mSpins(m);
+    return '<div class="amt">'+naira(amt(m))+'</div><span class="small muted">'+(mOn()?schName(sc)+' · ':'')+(sp.length?'Numbers '+sp.map(function(x){return '#'+x.pos}).join(', '):'Not spun')+' ('+sp.length+'/'+allowedSpins(m)+' spins)</span>'+(sp.length?'<br><button class="btn ghost sm" data-act="resetspin" data-id="'+m.id+'" data-v="'+sc+'" style="margin-top:6px">Reset '+(mOn()?schName(sc)+' ':'')+'spins</button>':'')+'<br>'})}).join('');
+}
+function monthlySettingsHTML(){
+  var M=db.settings.m;
+  return '<div class="card" style="background:var(--soft);box-shadow:none"><h3>Monthly contribution</h3><p class="small muted">A second contribution, collected once a month on the 30th (last day in February). It has its own numbers, payouts and spin.</p>'
+   +'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="sm-on" style="width:22px;min-height:22px"'+(M.on?' checked':'')+'><b>Turn on the monthly contribution</b></label>'
+   +'<div class="field"><label for="sm-start">Monthly starts (first collection: the 30th of a month)</label><input id="sm-start" type="date" value="'+esc(M.start)+'"></div>'
+   +'<div class="field"><label for="sm-rounds">Total number of monthly contributions</label><input id="sm-rounds" type="number" min="1" max="200" value="'+(+M.rounds||12)+'"></div>'
+   +'<div class="field"><label for="sm-slots">Number of positions on the monthly wheel</label><input id="sm-slots" type="number" min="2" max="100" value="'+(+M.slots||12)+'"></div>'
+   +'<div class="field"><label for="sm-block">Monthly numbers the wheel must never land on</label><input id="sm-block" value="'+esc((M.blocked||[]).join(', '))+'"></div>'
+   +'<div class="field"><label for="sm-unit">Monthly payout for every ₦5,000 contributed (₦)</label><input id="sm-unit" inputmode="numeric" value="'+esc(M.unitPayout||150000)+'"></div></div>';
+}
 function adminShell(){
   var s=db.settings,pend=db.payments.filter(function(p){return p.status==='pending'}).length,un=unreadFor('admin');
   var h='<div class="wrap">'+topbar();
   h+='<div class="atabs">'+[['overview','Overview',0],['notice','Notices',0],['payments','Payments',pend],['paidout','Paid out',0],['tracker','Tracker',0],['payouts','Numbers',0],['members','Members',0],['messages','Messages',un],['settings','Settings',0]].map(function(t){return '<button data-act="atab" data-v="'+t[0]+'" class="'+(ui.atab===t[0]?'on':'')+'">'+t[1]+(t[2]?' ('+t[2]+')':'')+'</button>'}).join('')+'</div>';
   if(!s.opayNumber)h+='<div class="notice">Set your Opay account name and number in Settings so members know where to pay.</div>';
   if(ui.atab==='overview'){
-    h+=spinSwitch();h+=periodCard();
+    h+=spinSwitch('d')+(mOn()?spinSwitch('m'):'');h+=inS('d',function(){return periodCard()})+(mOn()?inS('m',function(){return periodCard()}):'');
     var conf=db.payments.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
-    var hd=holders(),spun=0,spotsAll=0;wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))});
+    var spun=0,spotsAll=0;['d','m'].forEach(function(sc){if(sc==='m'&&!mOn())return;inS(sc,function(){var hd=holders();wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))})})});
     h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Paid out</span><b class="big" style="font-size:22px">'+naira(totalPaidOut())+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
-    h+='<div class="card"><h3>Needs attention</h3>'+(pend||un||db.members.some(onHold)?'<p>'+(pend?pend+' payment(s) waiting for confirmation. ':'')+(un?un+' unread message(s). ':'')+(db.members.some(onHold)?db.members.filter(onHold).length+' member(s) have red, so their payout is on hold.':'')+'</p>':'<p class="muted">Nothing waiting.</p>')+'</div>';
+    h+='<div class="card"><h3>Needs attention</h3>'+(pend||un||db.members.some(onHoldAny)?'<p>'+(pend?pend+' payment(s) waiting for confirmation. ':'')+(un?un+' unread message(s). ':'')+(db.members.some(onHoldAny)?db.members.filter(onHoldAny).length+' member(s) have red, so their payout is on hold.':'')+'</p>':'<p class="muted">Nothing waiting.</p>')+'</div>';
     var pdue=payoutRows().filter(function(r){return r.st==='due'}).length;
     if(pdue)h+='<div class="card"><h3>Payouts due now</h3><p>'+pdue+' member number(s) are due to collect.</p><button class="btn" data-act="atab" data-v="paidout">Open Paid out</button></div>';
   }
@@ -668,7 +723,7 @@ function adminShell(){
   }
   if(ui.atab==='members'){
     h+='<div class="card"><h2>Members</h2>'+(db.members.length?'<div class="list">'+db.members.map(function(m){
-      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHold(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHold(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redCycles(m).map(cLabel).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right"><div class="amt">'+naira(m.amount)+'</div><span class="small muted">'+(mSpins(m).length?'Numbers '+mSpins(m).map(function(x){return '#'+x.pos}).join(', '):'Not spun')+' ('+mSpins(m).length+'/'+allowedSpins(m)+' spins)</span>'+(mSpins(m).length?'<br><button class="btn ghost sm" data-act="resetspin" data-id="'+m.id+'" style="margin-top:6px">Reset spins</button>':'')+'<br><button class="btn ghost sm" data-act="delask" data-id="'+m.id+'" style="margin-top:6px;color:var(--bad)">Remove member</button></div></div>'+(ui.delAsk===m.id?'<div class="notice" style="margin-bottom:8px"><b>Remove '+esc(m.name)+'?</b> Their number(s) become free again. Their payment history stays on record.<div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn bad sm" data-act="delmember" data-id="'+m.id+'">Yes, remove</button><button class="btn ghost sm" data-act="delno">Cancel</button></div></div>':'');
+      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHoldAny(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHoldAny(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redLabels(m).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right">'+memberSchemes(m)+'<br><button class="btn ghost sm" data-act="delask" data-id="'+m.id+'" style="margin-top:6px;color:var(--bad)">Remove member</button></div></div>'+(ui.delAsk===m.id?'<div class="notice" style="margin-bottom:8px"><b>Remove '+esc(m.name)+'?</b> Their number(s) become free again. Their payment history stays on record.<div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn bad sm" data-act="delmember" data-id="'+m.id+'">Yes, remove</button><button class="btn ghost sm" data-act="delno">Cancel</button></div></div>':'');
     }).join('')+'</div>':'<p class="empty">No members yet. Share the link so people can register.</p>')+'</div>';
   }
   if(ui.atab==='messages'){
@@ -691,13 +746,14 @@ function adminShell(){
     h+='<div class="card"><h3>Posted notices</h3>'+(ns.length?'<div class="list">'+ns.map(function(x){return '<div class="item"><div>'+(x.title?'<b>'+esc(x.title)+'</b><br>':'')+'<span style="white-space:pre-wrap">'+esc(x.text)+'</span><br><span class="small muted">'+fmt(x.at)+'</span></div><button class="btn bad sm" data-act="delnotice" data-id="'+(CLOUD?x.id:x.id)+'">Delete</button></div>'}).join('')+'</div>':'<p class="empty">No notices yet.</p>')+'</div>';
   }
   if(ui.atab==='paidout')h+=paidOutTab();
+  if(ui.atab==='payouts'||ui.atab==='tracker'){SC=curAdminSc();h+=ascSwitch()}
   if(ui.atab==='payouts'){
-    var tk2=holders(),bl2={};(s.blocked||[]).forEach(function(x){bl2[x]=1});
-    h+=spinSwitch();
+    var sS=SS(),tk2=holders(),bl2={};(sS.blocked||[]).forEach(function(x){bl2[x]=1});
+    h+=spinSwitch(SC);
     h+='<form class="card" data-form="payouts"><h2>Payout for each number</h2><p class="muted small">Set how much each person on that number receives, and how many people share the number. For example, if number 1 is shared by 3 people, it turns grey only after 3 spins have landed on it. Leave it empty for 1 person.</p>'
      +'<div class="row" style="justify-content:flex-start"><input id="fill-a" inputmode="numeric" placeholder="Each receives (₦)" style="width:130px"><input id="fill-p" inputmode="numeric" placeholder="People sharing" style="width:120px"><button type="button" class="btn ghost sm" data-act="fillall">Fill all numbers</button></div>'
      +'<div class="trk"><table><thead><tr><th>No.</th><th>Each receives (₦)</th><th>People sharing</th><th>Taken by</th></tr></thead><tbody>';
-    for(var pi=1;pi<=s.slots;pi++){var po=(s.payouts||{})[pi]||{};
+    for(var pi=1;pi<=sS.slots;pi++){var po=(sS.payouts||{})[pi]||{};
       h+='<tr><td><b>'+pi+'</b>'+(bl2[pi]?' <span class="pill grey">blocked</span>':'')+'</td><td><input id="po-a-'+pi+'" inputmode="numeric" style="min-width:110px" value="'+esc(po.amt||'')+'"></td><td><input id="po-p-'+pi+'" inputmode="numeric" style="min-width:64px" value="'+esc(po.ppl||'')+'"></td><td class="small muted">'+(tk2[pi]?tk2[pi].length+' of '+capOf(pi)+': '+tk2[pi].map(function(id){return esc((memberById(id)||{name:'?'}).name)}).join(', '):(bl2[pi]?'-':'Free'))+'</td></tr>';
     }
     h+='</tbody></table></div><button class="btn" type="submit">Save payouts</button></form>';
@@ -705,11 +761,12 @@ function adminShell(){
   if(ui.atab==='tracker'){
     var cs=allCycles().slice(-6);
     h+='<div class="card"><h2>Payment tracker</h2>'+legendHTML()+(db.members.length?'<div class="trk"><table><thead><tr><th>Member</th>'+cs.map(function(k){return '<th>#'+roundNo(k)+'<br><span class="small muted">'+dueLabel(k).replace(/ \d{4}$/,'')+'</span></th>'}).join('')+'</tr></thead><tbody>'
-     +db.members.map(function(mb){var rd=dnOf(mb.created);return '<tr><td><b>'+esc(mb.name)+'</b>'+(onHold(mb)?'<br><span class="pill red">On hold</span>':'')+'</td>'+cs.map(function(k){
+     +db.members.filter(function(mb){return joined(mb,SC)}).map(function(mb){var rd=dnOf(jd(mb));return '<tr><td><b>'+esc(mb.name)+'</b>'+(onHold(mb)?'<br><span class="pill red">On hold</span>':'')+'</td>'+cs.map(function(k){
         if(keyDn(k)<rd)return '<td class="muted">-</td>';var s=cycleState(mb.id,k);
         return '<td><div><i class="dotc '+s.d+'"></i><span class="small muted">'+esc(s.paid?s.t:(s.d==='n'?'':s.t))+'</span></div></td>'}).join('')+'</tr>'}).join('')
      +'</tbody></table></div>':'<p class="empty">No members yet.</p>')+'</div>';
   }
+  SC='d';
   if(ui.atab==='settings'){
     h+='<form class="card" data-form="settings"><h2>Settings</h2>'
      +'<div class="field"><label for="s-group">Ajo name</label><input id="s-group" value="'+esc(s.group)+'" required></div>'
@@ -721,6 +778,7 @@ function adminShell(){
      +'<div class="field"><label for="s-start">Contribution starts (first collection date: a 10th, 20th or 30th)</label><input id="s-start" type="date" value="'+esc(s.start)+'" required></div>'
      +'<div class="field"><label for="s-rounds">Total number of contributions</label><input id="s-rounds" type="number" min="1" max="200" value="'+(+s.rounds||31)+'" required><span class="small muted">Contribution #1 is the start date, then every 10th, 20th and 30th after it. The last one is #'+(+s.rounds||31)+' on '+dueLabel(endKey())+'.</span></div>'
      +'<div class="field"><label for="s-unit">Payout for every \u20A65,000 contributed (\u20A6)</label><input id="s-unit" inputmode="numeric" value="'+esc(s.unitPayout||150000)+'" required><span class="small muted">Members see this: \u20A65,000 receives \u20A6150,000, \u20A610,000 receives \u20A6300,000, and so on.</span></div>'
+     +monthlySettingsHTML()
      +(CLOUD?'<p class="small muted">Your admin login is the email and password you created in Firebase.</p>':'<div class="field"><label for="s-pin">Admin PIN</label><input id="s-pin" inputmode="numeric" value="'+esc(s.adminPin)+'" required></div>')
      +'<button class="btn" type="submit">Save settings</button></form>';
   }
@@ -745,26 +803,27 @@ function drawWheel(){
   }
 }
 function cloudSpin(m,pos){
-  var sref=fs.collection('spots').doc(String(pos)),mref=fs.collection('members').doc(m.id),setr=fs.doc('settings/main'),at=Date.now();
+  var sc=SC,sref=fs.collection(sc==='m'?'mspots':'spots').doc(String(pos)),mref=fs.collection('members').doc(m.id),setr=fs.doc('settings/main'),at=Date.now(),fld=sc==='m'?'mspins':'spins',afld=sc==='m'?'mamount':'amount';
   return fs.runTransaction(function(t){
     return Promise.all([t.get(sref),t.get(mref),t.get(setr)]).then(function(r){
-      var hs=(r[0].exists&&r[0].data().holders)||[],mem=r[1].data()||{},st=r[2].data()||{};
-      if(!st.spinOpen)throw 'closed';
-      var cap=Math.max(1,((st.payouts||{})[pos]||{}).ppl||1);
+      var hs=(r[0].exists&&r[0].data().holders)||[],mem=r[1].data()||{},st=r[2].data()||{},ss=sc==='m'?(st.m||{}):st;
+      if(!ss.spinOpen)throw 'closed';
+      var cap=Math.max(1,((ss.payouts||{})[pos]||{}).ppl||1);
       if(hs.indexOf(m.id)>-1||hs.length>=cap)throw 'taken';
-      var sp=mem.spins||[];
-      if(sp.length>=Math.max(1,Math.floor((mem.amount||0)/5000)))throw 'nospin';
+      var sp=mem[fld]||[];
+      if(sp.length>=Math.max(1,Math.floor((mem[afld]||0)/5000)))throw 'nospin';
       t.set(sref,{holders:hs.concat([m.id])});
-      t.update(mref,{spins:sp.concat([{pos:pos,at:at}])});
+      var up={};up[fld]=sp.concat([{pos:pos,at:at}]);t.update(mref,up);
     });
   }).then(function(){
-    var c=memberById(m.id);if(c&&!(c.spins||[]).some(function(x){return x.pos===pos}))c.spins=(c.spins||[]).concat([{pos:pos,at:at}]);
-    var a=db.spots[pos]||[];if(a.indexOf(m.id)<0)db.spots[pos]=a.concat([m.id]);
+    var c=memberById(m.id);if(c&&!(c[fld]||[]).some(function(x){return x.pos===pos}))c[fld]=(c[fld]||[]).concat([{pos:pos,at:at}]);
+    var src=sc==='m'?db.mspots:db.spots,a=src[pos]||[];if(a.indexOf(m.id)<0)src[pos]=a.concat([m.id]);
   });
 }
-function doSpin(){
+function doSpin(){var m=me();if(m)inS(memberSc(m),doSpin0)}
+function doSpin0(){var sc=SC;
   var m=me();if(!m||ui.spinning||spinsLeft(m)<1)return;
-  if(!db.settings.spinOpen){toast('Spinning is not open yet.');return}
+  if(!SS().spinOpen){toast('Spinning is not open yet.');return}
   var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]});
   if(!free.length){toast('All numbers are taken.');return}
   var pos=free[rand(free.length)],n=nums.length,seg=360/n,k=nums.indexOf(pos);
@@ -774,16 +833,16 @@ function doSpin(){
   requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
   var commit=CLOUD?cloudSpin(m,pos):Promise.resolve();
   var wait=new Promise(function(r){setTimeout(r,6200)});
-  Promise.all([commit.then(function(){return null},function(e){console.error(e);return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){
+  Promise.all([commit.then(function(){return null},function(e){console.error(e);return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){inS(sc,function(){
     var err=r[0];
     if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':err==='taken'?'That number was just taken. Spin again.':err==='permission-denied'?'Spin blocked by the database rules. Admin: republish the rules.':err==='unavailable'||err==='network-request-failed'?'No internet. Please try again.':'Spin could not be saved ('+err+'). Please try again.');render();return}
     if(!CLOUD){
       var cur=memberById(m.id),again=takenFor(cur);
       if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
-      cur.spins=cur.spins||[];cur.spins.push({pos:pos,at:Date.now()});save();
+      var sf=sc==='m'?'mspins':'spins';cur[sf]=cur[sf]||[];cur[sf].push({pos:pos,at:Date.now()});save();
     }
     ui.spinning=false;render();
-  });
+  })});
 }
 /* ---------- messaging ---------- */
 function postMsg(text,audio){
@@ -822,7 +881,7 @@ function softRender(){
 }
 document.addEventListener('focusout',function(){if(!ui.dirty)return;setTimeout(function(){if(ui.dirty&&!typing()&&!ui.spinning&&!ui.recording)render()},250)});
 function render(){
-  ui.dirty=false;
+  ui.dirty=false;SC='d';
   var app=$('#app'),h;
   if(ui.booting)h=loadingView('Loading…');
   else if(isAdmin())h=adminShell();
@@ -834,7 +893,7 @@ function render(){
   if(!ui.booting&&isAdmin())h+=adminPayPopup();
   if(ui.cloudErr)h='<div class="banner"><div class="err" role="alert">'+esc(ui.cloudErr)+'</div></div>'+h;
   app.innerHTML=h;
-  drawWheel();payHint();
+  inS(me()?memberSc(me()):'d',drawWheel);payHint();
   var th=$('#thread');if(th)th.scrollTop=th.scrollHeight;
   if(ui.chat&&me()){markRead('member',me().id)}
   if(isAdmin()&&ui.atab==='messages'&&ui.thread){markRead('admin',ui.thread)}
@@ -848,7 +907,7 @@ function markRead(role,mid){
   if(ch)save();
 }
 document.addEventListener('input',function(e){if(e.target.id==='msg')ui.draft=e.target.value;if(e.target.id==='p-amt')payHint()});
-document.addEventListener('change',function(e){if(e.target.id==='p-due'){var m0=me();if(m0){var r0=m0.amount-paidSum(m0.id,e.target.value,false);$('#p-amt').value=r0>0?r0:m0.amount}payHint()}
+document.addEventListener('change',function(e){if(e.target.id==='p-due'){var m0=me();if(m0){inS(memberSc(m0),function(){var r0=amt(m0)-paidSum(m0.id,e.target.value,false);$('#p-amt').value=r0>0?r0:amt(m0)})}payHint()}
   if(e.target.id==='audioFile'&&e.target.files[0]){blobToMsg(e.target.files[0]);e.target.value=''}});
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
@@ -859,7 +918,7 @@ document.addEventListener('click',function(e){
   else if(a==='logout'){ui.chat=false;ui.adminPopSeen=false;ui.delAsk='';ui.auth=((location.hash||'').toLowerCase()==='#admin')?'admin':'login';ui.err='';ui.thread=null;ui.tab='home';if(CLOUD){fauth.signOut();return}db.session=null;save();render()}
   else if(a==='tab'){ui.tab=v;render()}
   else if(a==='atab'){ui.atab=v;ui.thread=null;render()}
-  else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=db.settings.slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
+  else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=SSof(curAdminSc()).slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
   else if(a==='release'){var rm=memberById(id);if(rm){updMember(rm.id,{released:!rm.released});render()}}
   else if(a==='payfill'){ui.payPick=v;ui.holdOk=false;render();var pa=$('#po-amt');if(pa)pa.focus()}
   else if(a==='delpayout'){if(CLOUD){fs.collection('payouts').doc(id).delete().catch(function(){toast('Could not undo.')})}else{db.payouts=db.payouts.filter(function(x){return x.id!==id});save();render()}toast('Payout removed')}
@@ -869,10 +928,12 @@ document.addEventListener('click',function(e){
   else if(a==='delno'){ui.delAsk='';render()}
   else if(a==='delmember'){ui.delAsk='';removeMember(id)}
   else if(a==='seen'){markSeen(Number(id));render()}
-  else if(a==='togglespin'){db.settings.spinOpen=!db.settings.spinOpen;pushSettings();render();toast(db.settings.spinOpen?'Spinning is now open':'Spinning is now closed')}
+  else if(a==='togglespin'){var tso=SSof(v==='m'?'m':'d');tso.spinOpen=!tso.spinOpen;pushSettings();render();toast(tso.spinOpen?'Spinning is now open':'Spinning is now closed')}
   else if(a==='delnotice'){delNotice(id)}
   else if(a==='editacct'){ui.editAcct=!ui.editAcct;render()}
   else if(a==='spin'){doSpin()}
+  else if(a==='scpick'){ui.sc=v;render()}
+  else if(a==='ascpick'){ui.asc=v;render()}
   else if(a==='openchat'){ui.chat=true;render()}
   else if(a==='closechat'){ui.chat=false;render()}
   else if(a==='openthread'){ui.thread=id;render()}
@@ -881,9 +942,9 @@ document.addEventListener('click',function(e){
   else if(a==='copy'){var n=db.settings.opayNumber;
     (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(n):Promise.reject()).then(function(){toast('Account number copied')},function(){var el=$('#acctnum');if(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Number selected. Press and hold to copy.')})}
   else if(a==='confirm'||a==='reject'){var p=db.payments.filter(function(x){return x.id===id})[0];if(p){var stt=a==='confirm'?'confirmed':'rejected';if(CLOUD){fs.collection('payments').doc(id).update({status:stt,cat:ts()}).catch(function(){toast('Could not update. Check your internet.')});return}p.status=stt;p.cat=Date.now();save();render()}}
-  else if(a==='resetspin'){var mm=memberById(id);if(mm){
-    if(CLOUD){var bt=fs.batch();mSpins(mm).forEach(function(x){bt.update(fs.collection('spots').doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(mm.id)})});bt.update(fs.collection('members').doc(mm.id),{spins:[]});bt.commit().then(function(){toast('Spins reset for '+mm.name)},function(){toast('Could not reset. Check your internet.')});return}
-    mm.spins=[];save();render();toast('Spins reset for '+mm.name)}}
+  else if(a==='resetspin'){var mm=memberById(id);if(mm){var rsc=v==='m'?'m':'d',fld=rsc==='m'?'mspins':'spins',col=rsc==='m'?'mspots':'spots';
+    if(CLOUD){var bt=fs.batch();inS(rsc,function(){mSpins(mm).forEach(function(x){bt.update(fs.collection(col).doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(mm.id)})})});var rpatch={};rpatch[fld]=[];bt.update(fs.collection('members').doc(mm.id),rpatch);bt.commit().then(function(){toast('Spins reset for '+mm.name)},function(){toast('Could not reset. Check your internet.')});return}
+    mm[fld]=[];save();render();toast('Spins reset for '+mm.name)}}
 });
 document.addEventListener('submit',function(e){
   var f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();
@@ -895,13 +956,16 @@ document.addEventListener('submit',function(e){
     var acno=g('acno').replace(/\s/g,'');
     if(!/^\d{10}$/.test(acno)){ui.err='Account number must be 10 digits.';render();return}
     if(!g('bank')||!g('acname')){ui.err='Choose your bank and enter the account name.';render();return}
-    var prof={name:g('name'),location:g('loc'),phone:phone,amount:Number(g('amt')),payout:{bank:g('bank'),number:acno,name:g('acname')}};
+    var prof={name:g('name'),location:g('loc'),phone:phone,amount:0,mamount:0,payout:{bank:g('bank'),number:acno,name:g('acname')}};
+    var jdE=f.elements['jd'],jmE=f.elements['jm'],wantD=!jdE||jdE.checked,wantM=!!(jmE&&jmE.checked);
+    if(!wantD&&!wantM){ui.err='Choose at least one contribution to join.';render();return}
+    prof.amount=wantD?Number(g('amt')):0;prof.mamount=wantM?Number(g('mamt')):0;
     if(CLOUD){
       var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
       var cu=null;
       fauth.createUserWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){
         cu=c.user;
-        return fs.collection('members').doc(c.user.uid).set({name:prof.name,location:prof.location,phone:prof.phone,amount:prof.amount,created:ts(),spins:[],released:false,payout:prof.payout});
+        return fs.collection('members').doc(c.user.uid).set({name:prof.name,location:prof.location,phone:prof.phone,amount:prof.amount,mamount:prof.mamount,created:ts(),spins:[],mspins:[],released:false,payout:prof.payout});
       }).then(function(){ui.err='';ui.tab='home';toast('Welcome, '+prof.name.split(' ')[0]+'.')}).catch(function(er){
         if(cu){cu.delete().catch(function(){});}
         if(er&&er.code==='auth/email-already-in-use')ui.auth='login';
@@ -910,7 +974,7 @@ document.addEventListener('submit',function(e){
       return;
     }
     if(db.members.some(function(m){return m.phone===phone})){ui.err='This phone number is already registered. Please log in.';ui.auth='login';render();return}
-    var m={id:uid(),name:prof.name,location:prof.location,phone:phone,amount:prof.amount,pin:pin,created:Date.now(),spins:[],payout:prof.payout};
+    var m={id:uid(),name:prof.name,location:prof.location,phone:phone,amount:prof.amount,mamount:prof.mamount,pin:pin,created:Date.now(),spins:[],mspins:[],payout:prof.payout};
     db.members.push(m);db.session={role:'member',memberId:m.id};save();ui.err='';ui.tab='home';render();toast('Welcome, '+m.name.split(' ')[0]+'.');
   }else if(k==='login'){
     var ph=normPhone(g('phone')),lpin=g('pin');
@@ -935,7 +999,7 @@ document.addEventListener('submit',function(e){
     updMember(me().id,{payout:{bank:g('bank'),number:ac,name:g('acname')}});ui.editAcct=false;render();toast('Payout account saved');
   }else if(k==='pay'){
     var pamt=parseInt(($('#p-amt').value||'').replace(/\D/g,''),10)||0;if(pamt<1||pamt>10000000){toast('Enter the amount you sent.');return}
-    var m2=me(),pd={mid:m2.id,amount:pamt,ref:$('#p-ref').value.trim(),status:'pending',cat:null,due:$('#p-due').value};
+    var m2=me(),pd={mid:m2.id,sch:memberSc(m2),amount:pamt,ref:$('#p-ref').value.trim(),status:'pending',cat:null,due:$('#p-due').value};
     if(CLOUD){pd.at=ts();fs.collection('payments').add(pd).catch(function(){toast('Payment not saved. Check your internet and try again.')})}
     else{pd.id=uid();pd.at=Date.now();db.payments.push(pd);save()}
     ui.tab='history';render();toast('Payment recorded. The admin will confirm it.');
@@ -947,19 +1011,23 @@ document.addEventListener('submit',function(e){
     var nobj={title:ntl,text:nt};
     if(CLOUD){nobj.at=ts();fs.collection('notices').add(nobj).then(function(){toast('Notice posted')},function(){toast('Could not post. Check your internet.')});$('#n-text').value='';$('#n-title').value=''}
     else{nobj.id=uid();nobj.at=Date.now();db.notices.push(nobj);save();render();toast('Notice posted')}
+  }else if(k==='join'){
+    var jsc=f.dataset.sch==='m'?'m':'d',jam=Number($('#j-amt').value),mm0=me();if(!mm0||!jam)return;
+    updMember(mm0.id,jsc==='m'?{mamount:jam,mjoined:Date.now(),mspins:[]}:{amount:jam,djoined:Date.now(),spins:[]});
+    ui.sc=jsc;toast('You have joined the '+schName(jsc)+' contribution.');if(!CLOUD)render();
   }else if(k==='paidout'){
-    var pk=($('#po-pick').value||'').split('|'),prow=payoutRows().filter(function(r){return r.m.id===pk[0]&&String(r.pos)===pk[1]})[0];
+    var pk=($('#po-pick').value||'').split('|'),prow=payoutRows().filter(function(r){return r.m.id===pk[0]&&String(r.pos)===pk[1]&&r.sc===pk[2]})[0];
     var pv=parseInt(($('#po-amt').value||'').replace(/\D/g,''),10)||0;
     if(!prow||pv<1){toast('Enter the amount you paid.');return}
     if(pv>prow.left){toast('That is more than the balance ('+naira(prow.left)+').');return}
-    if(onHold(prow.m)&&!ui.holdOk){ui.holdOk=true;toast(prow.m.name+' has red, so payout is on hold. Press Record payout again to pay anyway.');return}
+    if(prow.hold&&!ui.holdOk){ui.holdOk=true;toast(prow.m.name+' has red, so payout is on hold. Press Record payout again to pay anyway.');return}
     ui.holdOk=false;ui.payPick='';
-    var po0={mid:prow.m.id,pos:prow.pos,amount:pv,note:($('#po-note').value||'').trim()};
+    var po0={mid:prow.m.id,sch:prow.sc,pos:prow.pos,amount:pv,note:($('#po-note').value||'').trim()};
     if(CLOUD){po0.at=ts();fs.collection('payouts').add(po0).then(function(){toast('Payout recorded')},function(){toast('Could not save. Check your internet.')})}
     else{po0.id=uid();po0.at=Date.now();db.payouts.push(po0);save();render();toast('Payout recorded')}
   }else if(k==='payouts'){
-    var po2={},bad=0;for(var q=1;q<=db.settings.slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp||1}}
-    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return}db.settings.payouts=po2;pushSettings();render();toast('Payouts saved');
+    var psc=curAdminSc(),pres=inS(psc,function(){var po2={},bad=0;for(var q=1;q<=SS().slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp||1}}
+    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return false}SS().payouts=po2;return true});if(pres){pushSettings();render();toast('Payouts saved')}
   }else if(k==='settings'){
     var s=db.settings,slots=Math.max(2,Math.min(100,parseInt($('#s-slots').value,10)||s.slots));
     var taken=Object.keys(holders()).map(Number),mx=taken.length?Math.max.apply(null,taken):0;
@@ -970,6 +1038,12 @@ document.addEventListener('submit',function(e){
     var stv=$('#s-start').value||s.start,rv=Math.max(1,Math.min(200,parseInt($('#s-rounds').value,10)||s.rounds||31));
     if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}
     var unitv=parseInt(($('#s-unit').value||'').replace(/\D/g,''),10)||s.unitPayout||150000;
+    var M=s.m,mon=!!$('#sm-on').checked,mst=$('#sm-start').value||M.start,mr=Math.max(1,Math.min(200,parseInt($('#sm-rounds').value,10)||M.rounds||12)),msl=Math.max(2,Math.min(100,parseInt($('#sm-slots').value,10)||M.slots||12)),mu=parseInt(($('#sm-unit').value||'').replace(/\D/g,''),10)||M.unitPayout||150000;
+    if(!validMonthly(mst)){toast('The monthly start date must be the 30th of a month (the last day in February).');return}
+    var mbl=[];$('#sm-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=msl&&mbl.indexOf(v)<0)mbl.push(v)});mbl.sort(function(a,b){return a-b});
+    var mchk=inS('m',function(){var h2=holders(),ks=Object.keys(h2).map(Number),mx2=ks.length?Math.max.apply(null,ks):0;if(msl<mx2)return 'Some members already hold monthly number '+mx2+'. Reset their spins first.';var c=mbl.filter(function(v){return h2[v]})[0];if(c)return 'Monthly number '+c+' is already taken, so it cannot be blocked.';return ''});
+    if(mchk){toast(mchk);return}
+    M.on=mon;M.start=mst;M.rounds=mr;M.slots=msl;M.blocked=mbl;M.unitPayout=mu;
     s.blocked=bl;
     s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=stv;s.rounds=rv;s.end=endKey();s.unitPayout=unitv;
     if(!CLOUD)s.adminPin=$('#s-pin').value.trim()||s.adminPin;
@@ -988,7 +1062,7 @@ if(CLOUD){
   startPublic();
   fauth.onAuthStateChanged(function(u){
     ui.booting=false;stopAll(unsubUser);ui.chat=false;ui.thread=null;
-    if(u){startUser(u)}else{db.session=null;db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={}}
+    if(u){startUser(u)}else{db.session=null;db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={};db.mspots={}}
     render();
   });
   setTimeout(function(){if(ui.booting){ui.booting=false;render()}},8000);
