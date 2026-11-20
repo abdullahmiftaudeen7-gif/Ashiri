@@ -4,141 +4,177 @@
 <meta property="og:type" content="website"><meta property="og:title" content="Ashiri International Contribution"><meta property="og:description" content="Ashiri International Contribution is a Nigerian ajo savings group. Register, pay on the 10th, 20th and 30th, spin for your payout number and track your payments.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Ashiri International Contribution</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: single centred column, bottom tab bar for members, top tabs for admin, floating message button */
+/* Ashiri look: deep-emerald "coin" cards, pale mint ground, gold only for actions, floating pill navigation */
 :root{
-  --bg:#F2F5F0; --surface:#FFFFFF; --ink:#12261E; --muted:#58695F; --line:#DCE3DB;
-  --brand:#0E5A3F; --brand-ink:#FFFFFF; --gold:#E8A917; --gold-ink:#2A1D00;
+  --bg:#EBF1EE; --surface:#FFFFFF; --ink:#0C1E18; --muted:#58695F; --line:#D9E3DD; --soft:#F3F7F5;
+  --brand:#0A6B4B; --brand-ink:#FFFFFF; --deep:#06372A; --deep-2:#0C5C42; --on-deep:#E8F5EE; --on-deep-2:rgba(232,245,238,.72);
+  --gold:#F2B632; --gold-ink:#2A1D00;
   --yel:#6E5200; --yel-bg:#FFF0B3;
   --ok:#17794A; --ok-bg:#DDF2E6; --warn:#8F5600; --warn-bg:#FBEBC8; --bad:#B3261E; --bad-bg:#F9DEDA;
-  --wheel-a:#0E5A3F; --wheel-b:#2A8A63; --wheel-taken:#C8D1CA; --wheel-text:#FFFFFF; --wheel-text-taken:#7B887F;
-  --mine:#0E5A3F; --mine-ink:#FFFFFF; --theirs:#E7ECE6;
+  --wheel-a:#0A6B4B; --wheel-b:#1F9A6D; --wheel-taken:#CBD6CF; --wheel-text:#FFFFFF; --wheel-text-taken:#7B887F;
+  --mine:#0A6B4B; --mine-ink:#FFFFFF; --theirs:#E4ECE7;
+  --shadow:0 1px 2px rgba(6,55,42,.05),0 12px 28px -18px rgba(6,55,42,.35);
   --font-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
-  --font-body:'DM Sans','Segoe UI',system-ui,sans-serif;
+  --font-body:'Manrope','Segoe UI',system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0C1713; --surface:#14231D; --ink:#E7EFEA; --muted:#9BAFA4; --line:#25392F;
-  --brand:#34B07C; --brand-ink:#04140C; --gold:#F0B92E; --gold-ink:#2A1D00;
+  --bg:#07120E; --surface:#0F1D17; --ink:#E8F1EC; --muted:#97ACA1; --line:#1F332A; --soft:#0B1812;
+  --brand:#3DBB86; --brand-ink:#04140C; --deep:#0D2E23; --deep-2:#15553E; --gold:#F2B632; --gold-ink:#2A1D00;
   --ok:#5DD39A; --ok-bg:#16382A; --warn:#F0B95A; --warn-bg:#3A2D10; --bad:#FF8E85; --bad-bg:#42201C;
-  --wheel-a:#1F7F58; --wheel-b:#2FA36F; --wheel-taken:#2B3C33; --wheel-text:#FFFFFF; --wheel-text-taken:#6F8478;
-  --yel:#F5D44E; --yel-bg:#3A3110;
-  --mine:#2FA36F; --mine-ink:#04140C; --theirs:#1F3128; color-scheme:dark}}
+  --wheel-a:#1B7A55; --wheel-b:#2DA472; --wheel-taken:#243830; --wheel-text:#FFFFFF; --wheel-text-taken:#6F8478;
+  --yel:#F5D44E; --yel-bg:#3A3110; --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 30px -18px rgba(0,0,0,.7);
+  --mine:#2DA472; --mine-ink:#04140C; --theirs:#1A2C23; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0C1713; --surface:#14231D; --ink:#E7EFEA; --muted:#9BAFA4; --line:#25392F;
-  --brand:#34B07C; --brand-ink:#04140C; --gold:#F0B92E; --gold-ink:#2A1D00;
+  --bg:#07120E; --surface:#0F1D17; --ink:#E8F1EC; --muted:#97ACA1; --line:#1F332A; --soft:#0B1812;
+  --brand:#3DBB86; --brand-ink:#04140C; --deep:#0D2E23; --deep-2:#15553E; --gold:#F2B632; --gold-ink:#2A1D00;
   --ok:#5DD39A; --ok-bg:#16382A; --warn:#F0B95A; --warn-bg:#3A2D10; --bad:#FF8E85; --bad-bg:#42201C;
-  --wheel-a:#1F7F58; --wheel-b:#2FA36F; --wheel-taken:#2B3C33; --wheel-text:#FFFFFF; --wheel-text-taken:#6F8478;
-  --yel:#F5D44E; --yel-bg:#3A3110;
-  --mine:#2FA36F; --mine-ink:#04140C; --theirs:#1F3128; color-scheme:dark}
+  --wheel-a:#1B7A55; --wheel-b:#2DA472; --wheel-taken:#243830; --wheel-text:#FFFFFF; --wheel-text-taken:#6F8478;
+  --yel:#F5D44E; --yel-bg:#3A3110; --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 30px -18px rgba(0,0,0,.7);
+  --mine:#2DA472; --mine-ink:#04140C; --theirs:#1A2C23; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 96px}
-h1,h2,h3{font-family:var(--font-display);margin:0;line-height:1.15;text-wrap:balance}
-h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em}
-h2{font-size:21px;font-weight:700}
-h3{font-size:16px;font-weight:700}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  background-image:radial-gradient(900px 340px at 50% -120px,color-mix(in srgb,var(--brand) 16%,transparent),transparent);background-repeat:no-repeat;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
+h1,h2,h3{font-family:var(--font-display);margin:0;line-height:1.12;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(32px,8.4vw,48px);font-weight:800;letter-spacing:-.03em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:700}
 p{margin:0}
 button,input,select,textarea{font:inherit;color:inherit}
-.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:16px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:18px;min-width:0}
-.brand b{line-height:1.15;font-size:16px;letter-spacing:.01em}
-.mark{width:34px;height:34px;border-radius:50%;background:var(--brand);display:grid;place-items:center;flex:none}
-.mark svg{width:20px;height:20px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:0}
+.wrap:has(.atabs){max-width:1000px}
+.wrap:has(.atabs)>.grid2{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;margin:0 -16px;
+  background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;min-width:0}
+.brand b{line-height:1.1;font-size:15px;letter-spacing:.005em}
+.mark{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 30% 25%,var(--deep-2),var(--deep));display:grid;place-items:center;flex:none;box-shadow:0 0 0 2px var(--gold),0 6px 14px -6px rgba(6,55,42,.7)}
+.mark svg{width:19px;height:19px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0;box-shadow:var(--shadow)}
+.card.hc{background:
+  radial-gradient(circle at 104% -6%,transparent 0 70px,rgba(255,255,255,.07) 70px 71px,transparent 71px 104px,rgba(255,255,255,.06) 104px 105px,transparent 105px 140px,rgba(242,182,50,.16) 140px 141px,transparent 141px),
+  linear-gradient(155deg,var(--deep-2),var(--deep));
+  color:var(--on-deep);border:0;box-shadow:0 18px 36px -22px rgba(6,55,42,.8)}
+.hc .muted,.hc .label,.hc .small{color:var(--on-deep-2)}
+.hc .big,.hc .hbig{color:#fff}
+.hbig{font-family:var(--font-display);font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
 .muted{color:var(--muted)}
 .small{font-size:13px}
-.label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.big{font-family:var(--font-display);font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.label{font-size:13px;color:var(--muted);font-weight:600}
+.big{font-family:var(--font-display);font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.05}
 .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;min-width:0}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.btn{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;background:var(--brand);color:var(--brand-ink);min-height:44px}
+.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:700;cursor:pointer;background:var(--brand);color:var(--brand-ink);min-height:46px;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.06)}.btn:active{transform:scale(.98)}
 .btn.gold{background:var(--gold);color:var(--gold-ink)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn.sm{padding:8px 12px;min-height:36px;font-size:13px}
+.btn.sm{padding:8px 14px;min-height:36px;font-size:13px;border-radius:12px}
 .btn.bad{background:var(--bad-bg);color:var(--bad)}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-form{display:flex;flex-direction:column;gap:12px}
+form{display:flex;flex-direction:column;gap:14px}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-weight:700;font-size:13px}
-input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px;width:100%}
+input,select,textarea{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:11px 14px;min-height:46px;width:100%;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 20%,transparent)}
 textarea{resize:vertical;min-height:96px}
-.err{background:var(--bad-bg);color:var(--bad);padding:10px 12px;border-radius:10px;font-size:14px}
-.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
-.seg button{border:0;background:transparent;padding:10px;border-radius:9px;font-weight:700;cursor:pointer;color:var(--muted)}
-.seg button.on{background:var(--brand);color:var(--brand-ink)}
-.hero{display:flex;flex-direction:column;gap:10px;padding:8px 0 4px}
-.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.err{background:var(--bad-bg);color:var(--bad);padding:12px 14px;border-radius:14px;font-size:14px;font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:5px;gap:4px;box-shadow:var(--shadow)}
+.seg button{border:0;background:transparent;padding:11px;border-radius:99px;font-weight:700;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--deep);color:#fff}
+.hero{display:flex;flex-direction:column;gap:12px;padding:14px 0 6px}
+.hero p{max-width:52ch;font-size:16px}
+.pill{display:inline-block;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:700}
 .pill.pending{background:var(--warn-bg);color:var(--warn)}
 .pill.confirmed{background:var(--ok-bg);color:var(--ok)}
 .pill.rejected{background:var(--bad-bg);color:var(--bad)}
 .pill.green{background:var(--ok-bg);color:var(--ok)}
 .pill.yellow{background:var(--yel-bg);color:var(--yel)}
 .pill.red{background:var(--bad-bg);color:var(--bad)}
-.pill.grey{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
-.dotc{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
+.pill.grey{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.dotc{display:inline-block;width:14px;height:14px;border-radius:50%;flex:none}
 .dotc.g{background:#1E9E5F}.dotc.y{background:#F2C21B}.dotc.r{background:#D93A30}.dotc.n{background:var(--line)}
-.legend{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
 .legend span{display:flex;gap:8px;align-items:center}
 .trk{overflow-x:auto}
 .trk table{border-collapse:collapse;min-width:100%;font-size:13px}
-.trk th,.trk td{padding:8px 10px;border-top:1px solid var(--line);text-align:center;white-space:nowrap}
+.trk th,.trk td{padding:9px 10px;border-top:1px solid var(--line);text-align:center;white-space:nowrap}
+.trk th{font-weight:700;border-top:0}
 .trk th:first-child,.trk td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
 .trk td div{display:flex;flex-direction:column;align-items:center;gap:2px}
-.acct{display:flex;flex-direction:column;gap:2px;background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:12px}
-.acct .num{font-family:var(--font-display);font-size:26px;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums;word-break:break-all}
+.acct{display:flex;flex-direction:column;gap:2px;background:var(--soft);border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:16px;padding:14px 16px}
+.acct .num{font-family:var(--font-display);font-size:28px;font-weight:800;letter-spacing:.05em;font-variant-numeric:tabular-nums;word-break:break-all}
 .list{display:flex;flex-direction:column}
-.item{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);min-width:0}
+.item{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line);min-width:0}
 .item:first-child{border-top:0}
 .item>div{min-width:0}
 .item .amt{font-family:var(--font-display);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;
-  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));z-index:20}
-.tabs .in{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;max-width:640px;gap:4px}
-.tabs button{border:0;background:transparent;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:10px;position:relative}
-.tabs button.on{color:var(--brand);background:var(--bg)}
-.tabs svg{width:22px;height:22px}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.tabs .in{pointer-events:auto;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;max-width:400px;gap:4px;padding:6px;border-radius:99px;
+  background:color-mix(in srgb,var(--surface) 86%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line);box-shadow:0 16px 34px -14px rgba(6,55,42,.55)}
+.tabs button{border:0;background:transparent;padding:9px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:99px;position:relative}
+.tabs button.on{color:#fff;background:var(--deep)}
+.tabs svg{width:21px;height:21px}
 .dot{position:absolute;top:2px;right:calc(50% - 20px);min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 5px}
-.fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--gold);color:var(--gold-ink);
-  display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:25}
-.fab svg{width:26px;height:26px}
+.fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(96px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:0;background:var(--gold);color:var(--gold-ink);
+  display:grid;place-items:center;cursor:pointer;box-shadow:0 10px 22px -6px rgba(120,80,0,.55);z-index:25}
+.fab svg{width:25px;height:25px}
 .fab .dot{top:-2px;right:-2px}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
-.sheet .panel{background:var(--bg);width:100%;max-width:640px;height:min(86%,640px);border-radius:18px 18px 0 0;display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px)}
-.sheet header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
-.thread{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-height:160px}
-.b{max-width:82%;padding:9px 12px;border-radius:14px;display:flex;flex-direction:column;gap:4px;word-break:break-word}
-.b.mine{align-self:flex-end;background:var(--mine);color:var(--mine-ink);border-bottom-right-radius:4px}
-.b.theirs{align-self:flex-start;background:var(--theirs);border-bottom-left-radius:4px}
+.sheet{position:fixed;inset:0;background:rgba(3,14,10,.55);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet .panel{background:var(--bg);width:100%;max-width:680px;height:min(86%,660px);border-radius:28px 28px 0 0;display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--surface)}
+.thread{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-height:160px}
+.b{max-width:82%;padding:10px 14px;border-radius:18px;display:flex;flex-direction:column;gap:4px;word-break:break-word}
+.b.mine{align-self:flex-end;background:var(--mine);color:var(--mine-ink);border-bottom-right-radius:5px}
+.b.theirs{align-self:flex-start;background:var(--theirs);border-bottom-left-radius:5px}
 .b time{font-size:11px;opacity:.75}
 .b audio{max-width:100%;height:36px}
-.composer{display:flex;flex-direction:row;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface);align-items:center}
-.composer input{flex:1;min-width:0}
-.ib{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center;cursor:pointer;flex:none}
+.composer{display:flex;flex-direction:row;gap:8px;padding:12px 14px;border-top:1px solid var(--line);background:var(--surface);align-items:center}
+.composer input{flex:1;min-width:0;border-radius:99px}
+.ib{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--soft);display:grid;place-items:center;cursor:pointer;flex:none}
 .ib svg{width:20px;height:20px}
 .ib.rec{background:var(--bad);color:#fff;border-color:var(--bad)}
 .ib.send{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
-.wheelbox{position:relative;width:min(100%,340px);aspect-ratio:1;margin:4px auto}
-.wheelbox canvas{width:100%;height:100%;display:block;border-radius:50%;box-shadow:0 0 0 6px var(--gold),0 10px 28px rgba(0,0,0,.25)}
-.pointer{position:absolute;left:50%;top:-12px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--bad);z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
-.hub{position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:var(--surface);border:4px solid var(--gold);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:13px;z-index:2}
+.wheelbox{position:relative;width:min(100%,340px);aspect-ratio:1;margin:8px auto}
+.wheelbox canvas{width:100%;height:100%;display:block;border-radius:50%;box-shadow:0 0 0 6px var(--gold),0 0 0 9px var(--deep),0 18px 34px -12px rgba(6,55,42,.6)}
+.pointer{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid var(--bad);z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.hub{position:absolute;left:50%;top:50%;width:66px;height:66px;transform:translate(-50%,-50%);border-radius:50%;background:var(--deep);color:#fff;border:4px solid var(--gold);display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:13px;z-index:2}
 .result{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
-.result .no{font-family:var(--font-display);font-size:64px;font-weight:800;line-height:1;color:var(--brand)}
-.stat{display:flex;flex-direction:column;gap:2px;background:var(--bg);border-radius:12px;padding:12px}
-.atabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-.atabs button{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:99px;font-weight:700;cursor:pointer;white-space:nowrap;position:relative;color:var(--muted)}
-.atabs button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-weight:700;font-size:14px;z-index:60;max-width:90%;text-align:center}
-.empty{color:var(--muted);text-align:center;padding:18px 8px}
-.notice{background:var(--warn-bg);color:var(--warn);padding:10px 12px;border-radius:10px;font-size:14px}
+.result .no{font-family:var(--font-display);font-size:68px;font-weight:800;line-height:1;color:var(--brand)}
+.stat{display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow)}
+.card .stat{box-shadow:none;background:var(--soft)}
+.atabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.atabs button{border:1px solid var(--line);background:var(--surface);padding:9px 16px;border-radius:99px;font-weight:700;cursor:pointer;white-space:nowrap;position:relative;color:var(--muted)}
+.atabs button.on{background:var(--deep);color:#fff;border-color:var(--deep)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(160px + env(safe-area-inset-bottom,0px));background:var(--deep);color:#fff;padding:11px 18px;border-radius:99px;font-weight:700;font-size:14px;z-index:60;max-width:90%;text-align:center;box-shadow:0 12px 26px -10px rgba(0,0,0,.6)}
+.empty{color:var(--muted);text-align:center;padding:20px 8px}
+.notice{background:var(--warn-bg);color:var(--warn);padding:12px 14px;border-radius:16px;font-size:14px;font-weight:600}
 a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;display:grid;place-items:center;padding:16px}
-.modal .box{background:var(--surface);border-radius:16px;padding:20px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px;border-top:6px solid var(--gold);max-height:85%;overflow-y:auto}
-.banner{max-width:640px;margin:12px auto 0}
-.foot{max-width:640px;margin:20px auto 0;text-align:center;font-size:12px;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.modal{position:fixed;inset:0;background:rgba(3,14,10,.6);z-index:70;display:grid;place-items:center;padding:16px}
+.modal .box{background:var(--surface);border-radius:28px;padding:24px;max-width:430px;width:100%;display:flex;flex-direction:column;gap:12px;border-top:6px solid var(--gold);max-height:85%;overflow-y:auto;box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+.banner{max-width:680px;margin:12px auto 0}
+.bar{height:12px;border-radius:99px;background:var(--soft);border:1px solid var(--line);overflow:hidden;display:flex}
+.bar i{display:block;height:100%;animation:grow .9s ease}
+.bar .conf{background:linear-gradient(90deg,var(--brand),#5FD3A0)}
+.bar .pend{background:var(--gold)}
+@keyframes grow{from{width:0}}
+.foot{max-width:680px;margin:24px auto 0;text-align:center;font-size:12px;color:var(--muted)}
+.rchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.rc{min-width:32px;height:32px;padding:0 7px;border-radius:99px;display:inline-grid;place-items:center;font-size:12px;font-weight:800;background:var(--line);color:var(--muted);font-variant-numeric:tabular-nums}
+.rc.g{background:var(--ok);color:#fff}.rc.y{background:#F2C21B;color:#2a2000}.rc.r{background:var(--bad);color:#fff}
+.rc.p{background:transparent;color:var(--ink);outline:2px dashed var(--muted);outline-offset:-3px}
+.rc.past{background:var(--muted);color:var(--bg)}
+.rc.cur{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--brand)}
+.hc .rc{background:rgba(255,255,255,.14);color:var(--on-deep)}
+.hc .rc.g{background:#34C583;color:#03140C}.hc .rc.y{background:#F2C21B;color:#2a2000}.hc .rc.r{background:#FF6B5E;color:#2a0500}
+.hc .rc.p{background:transparent;color:#fff;outline-color:rgba(255,255,255,.6)}
+.hc .rc.past{background:rgba(255,255,255,.3);color:#fff}
+.hc .rc.cur{box-shadow:0 0 0 2px var(--deep),0 0 0 4px var(--gold)}
+@media (min-width:900px){.wrap:not(:has(.atabs)){max-width:720px}body{font-size:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
 </head><body>
@@ -186,36 +222,57 @@ function fmt(t){return new Intl.DateTimeFormat('en-NG',{timeZone:'Africa/Lagos',
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function rand(n){var b=new Uint32Array(1);(window.crypto||{getRandomValues:function(x){x[0]=Math.floor(Math.random()*4294967296)}}).getRandomValues(b);return b[0]%n}
 /* ---- Live database (Firebase). Keep FIREBASE_CONFIG as null to run in this-phone-only demo mode. ---- */
-var FIREBASE_CONFIG=null;
-var ADMIN_EMAIL='';
+var FIREBASE_CONFIG={"apiKey": "AIzaSyB6OFfywJbIiN8REtOt1h7EySv_PY5I8mk", "authDomain": "ashiri-test.firebaseapp.com", "projectId": "ashiri-test", "storageBucket": "ashiri-test.firebasestorage.app", "messagingSenderId": "545750927088", "appId": "1:545750927088:web:0fe01327c7dc71abff6435"};
+var ADMIN_EMAIL="abdullahmiftaudeen7@gmail.com";
 var MEMBER_DOMAIN='@ashiri-members.com';
 var CLOUD=false,fauth=null,fs=null,unsubPub=[],unsubUser=[];
 (function(){try{if(FIREBASE_CONFIG&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);fauth=firebase.auth();fs=firebase.firestore();CLOUD=true}}catch(e){CLOUD=false}})();
 function ts(){return firebase.firestore.FieldValue.serverTimestamp()}
-function defaults(){var p=lp(Date.now());return{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,start:p.y+'-'+pad(p.m)+'-10'}}
-function fresh(){return{settings:defaults(),members:[],payments:[],messages:[],notices:[],spots:{},session:null}}
+function defaults(){var p=lp(Date.now());return{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,end:'',rounds:31,unitPayout:150000,start:p.y+'-'+pad(p.m)+'-10'}}
+function fresh(){return{settings:defaults(),members:[],payments:[],payouts:[],messages:[],notices:[],spots:{},session:null}}
 var memStore=null;
 function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return memStore||fresh()}
 var db=CLOUD?fresh():load();
-(function(){var s=db.settings;if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;db.notices=db.notices||[];db.spots=db.spots||{};if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
+(function(){var s=db.settings;if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;if(s.end===undefined)s.end='';fixRounds(s);db.payouts=db.payouts||[];if(!s.unitPayout)s.unitPayout=150000;db.notices=db.notices||[];db.spots=db.spots||{};if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
 /* ---- due dates: 10th, 20th, 30th (last day in February) ---- */
 function pad(n){return (n<10?'0':'')+n}
 function lp(t){var s=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t)).split('-');return{y:+s[0],m:+s[1],d:+s[2]}}
 function dnOf(t){var p=lp(t);return Math.round(Date.UTC(p.y,p.m-1,p.d)/864e5)}
 function keyDn(k){var p=k.split('-');return Math.round(Date.UTC(+p[0],+p[1]-1,+p[2])/864e5)}
 function dueLabel(k){var p=k.split('-');return new Intl.DateTimeFormat('en-NG',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric'}).format(Date.UTC(+p[0],+p[1]-1,+p[2]))}
-function allCycles(){
-  var st=keyDn(db.settings.start),today=dnOf(Date.now()),out=[],sp=db.settings.start.split('-'),y=+sp[0],m=+sp[1],g=0;
-  while(g++<600){
+function roundKeys(){
+  var s=db.settings,n=Math.max(1,Math.min(200,+s.rounds||31)),key=s.start+'|'+n;
+  if(roundKeys.c&&roundKeys.c.k===key)return roundKeys.c.v;
+  var out=[],sp=s.start.split('-'),y=+sp[0],m=+sp[1],st=keyDn(s.start),g=0;
+  while(out.length<n&&g++<500){
     var last=new Date(Date.UTC(y,m,0)).getUTCDate();
-    [10,20,Math.min(30,last)].forEach(function(d){var k=y+'-'+pad(m)+'-'+pad(d);if(keyDn(k)>=st)out.push(k)});
-    var i=-1;for(var j=0;j<out.length;j++){if(keyDn(out[j])>=today){i=j;break}}
-    if(i>=0)return out.slice(0,i+1);
+    [10,20,Math.min(30,last)].forEach(function(d){var k=y+'-'+pad(m)+'-'+pad(d);if(out.length>=n||keyDn(k)<st)return;out.push(k)});
     m++;if(m>12){m=1;y++}
   }
+  roundKeys.c={k:key,v:out};return out;
+}
+function endKey(){var r=roundKeys();return r[r.length-1]||''}
+function roundNo(k){return roundKeys().indexOf(k)+1}
+function keyAtRound(n){return roundKeys()[n-1]||null}
+function cLabel(k){return 'Contribution #'+roundNo(k)+' ('+dueLabel(k)+')'}
+function fixRounds(s){
+  if(!s.rounds){s.rounds=200;var e=s.end,ks=roundKeys();s.rounds=(e&&validDue(e))?(ks.filter(function(k){return k<=e}).length||31):31}
+  s.end=endKey();
+}
+function cycleKeys(full){
+  var all=roundKeys();if(full)return all.slice();
+  var today=dnOf(Date.now()),out=[];
+  for(var i=0;i<all.length;i++){out.push(all[i]);if(keyDn(all[i])>=today)break}
   return out;
 }
+function allCycles(){return cycleKeys(false)}
+function validDue(str){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(str))return false;
+  var y=+str.slice(0,4),m=+str.slice(5,7),d=+str.slice(8),last=new Date(Date.UTC(y,m,0)).getUTCDate();
+  return d===10||d===20||d===Math.min(30,last);
+}
 function cyclesFor(m){var rd=dnOf(m.created);return allCycles().filter(function(k){return keyDn(k)>=rd})}
+function fullCyclesFor(m){var rd=dnOf(m.created);return cycleKeys(true).filter(function(k){return keyDn(k)>=rd})}
 function payDue(p){
   if(p.due)return p.due;var cs=allCycles(),dn=dnOf(p.at),pick=cs[0];
   cs.forEach(function(k){if(keyDn(k)<=dn)pick=k});return pick;
@@ -226,42 +283,141 @@ function timing(p){
   if(late<=5)return{c:'yellow',d:'y',t:'Yellow'};
   return{c:'red',d:'r',t:'Late · '+late+' days'};
 }
+function paidSum(mid,k,confOnly){return db.payments.filter(function(p){return p.mid===mid&&p.status!=='rejected'&&payDue(p)===k&&(!confOnly||p.status==='confirmed')}).reduce(function(t,p){return t+(p.amount||0)},0)}
 function tagHTML(p){
-  if(p.status==='pending')return '<span class="pill pending">For '+dueLabel(payDue(p))+' · Awaiting confirmation</span>';
-  if(p.status==='rejected')return '<span class="pill rejected">For '+dueLabel(payDue(p))+' · Rejected</span>';
-  var t=timing(p);return '<span class="pill '+t.c+'">For '+dueLabel(payDue(p))+' · '+t.t+'</span>';
+  var lab='For #'+roundNo(payDue(p))+' · '+dueLabel(payDue(p))+' · ';
+  if(p.status==='pending')return '<span class="pill pending">'+lab+'Awaiting confirmation</span>';
+  if(p.status==='rejected')return '<span class="pill rejected">'+lab+'Rejected</span>';
+  var mem=memberById(p.mid),need=mem?mem.amount:5000,k=payDue(p);
+  var cf=db.payments.filter(function(x){return x.mid===p.mid&&x.status==='confirmed'&&payDue(x)===k}).sort(function(a,b){return a.at-b.at});
+  var before=0;for(var i=0;i<cf.length;i++){if(cf[i].id===p.id)break;before+=cf[i].amount}
+  if(before>=need)return '<span class="pill grey">'+lab+'Extra payment</span>';
+  if(before+p.amount<need)return '<span class="pill grey">'+lab+'Part payment</span>';
+  var t=timing(p);return '<span class="pill '+t.c+'">'+lab+t.t+'</span>';
 }
 function cycleState(mid,k){
+  var mem=memberById(mid),need=mem?mem.amount:5000;
   var ps=db.payments.filter(function(p){return p.mid===mid&&p.status!=='rejected'&&payDue(p)===k}).sort(function(a,b){return a.at-b.at});
-  var cf=ps.filter(function(p){return p.status==='confirmed'});
-  if(cf.length){var t=timing(cf[0]);return{c:t.c,d:t.d,t:t.t,paid:true}}
-  if(ps.length)return{c:'pending',d:'n',t:'Awaiting confirmation',paid:true};
-  var late=dnOf(Date.now())-keyDn(k);
-  if(late<=0)return{c:'grey',d:'n',t:late===0?'Due today':'Not due yet',paid:false};
-  if(late<=5)return{c:'yellow',d:'y',t:'Not paid',paid:false};
-  return{c:'red',d:'r',t:'Not paid',paid:false};
+  var run=0,done=null;
+  ps.filter(function(p){return p.status==='confirmed'}).forEach(function(p){run+=p.amount;if(done===null&&run>=need)done=p});
+  if(done){var t=timing(done);return{c:t.c,d:t.d,t:t.t,paid:true}}
+  var all=ps.reduce(function(t,p){return t+p.amount},0);
+  if(all>=need)return{c:'pending',d:'n',t:'Awaiting confirmation',paid:true};
+  var late=dnOf(Date.now())-keyDn(k),part=all>0?'Part paid, '+naira(need-all)+' left':'';
+  if(late<=0)return{c:'grey',d:'n',t:part||(late===0?'Due today':'Not due yet'),paid:false};
+  if(late<=5)return{c:'yellow',d:'y',t:part||'Not paid',paid:false};
+  return{c:'red',d:'r',t:part||'Not paid',paid:false};
 }
 function legendHTML(){
   return '<div class="legend"><span><i class="dotc g"></i> Paid on the due date (10th, 20th, 30th): green</span><span><i class="dotc y"></i> Paid on the 11th to 15th (21st to 25th): marked yellow</span><span><i class="dotc r"></i> Paid from the 16th (26th) onward: late, marked red</span><span><i class="dotc n"></i> Sent but not confirmed yet: no colour until the admin confirms</span></div>';
 }
 function redCycles(m){return cyclesFor(m).filter(function(k){return cycleState(m.id,k).c==='red'})}
 function onHold(m){return !m.released&&redCycles(m).length>0}
-function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redCycles(m).map(dueLabel).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
+function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redCycles(m).map(cLabel).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
 function protocolHTML(){
   return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li><li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li>Your colour is marked automatically as soon as the admin confirms that your money has arrived.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
 }
 function scheduleCard(m){
   var cs=cyclesFor(m).slice(-5).reverse();
   return '<div class="card"><h3>Collection dates</h3><p class="muted small">Contribution is collected every 10 days: the 10th, 20th and 30th.</p><div class="list">'
-   +cs.map(function(k){var s=cycleState(m.id,k);return '<div class="item"><div><b>'+dueLabel(k)+'</b></div><span class="pill '+s.c+'">'+s.t+'</span></div>'}).join('')+'</div>'+legendHTML()+'</div>';
+   +cs.map(function(k){var s=cycleState(m.id,k);return '<div class="item"><div><b>Contribution #'+roundNo(k)+'</b><br><span class="small muted">'+dueLabel(k)+'</span></div><span class="pill '+s.c+'">'+s.t+'</span></div>'}).join('')+'</div>'+legendHTML()+'</div>';
 }
+function focusCycle(m){var cs=cyclesFor(m);if(!cs.length)return null;for(var i=0;i<cs.length;i++){if(paidSum(m.id,cs[i],false)<m.amount)return cs[i]}return cs[cs.length-1]}
 function cycleField(m){
-  var cs=cyclesFor(m).slice(-8),def=cs[cs.length-1];
-  for(var i=0;i<cs.length;i++){var k=cs[i];if(!db.payments.some(function(p){return p.mid===m.id&&p.status!=='rejected'&&payDue(p)===k})){def=k;break}}
-  return '<div class="field"><label for="p-due">Paying for which date</label><select id="p-due">'+cs.map(function(k){var paid=db.payments.some(function(p){return p.mid===m.id&&p.status!=='rejected'&&payDue(p)===k});return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+dueLabel(k)+(paid?' (already sent)':'')+'</option>'}).join('')+'</select></div>';
+  var cs=cyclesFor(m).slice(-8),def=focusCycle(m);
+  return '<div class="field"><label for="p-due">Paying for which contribution</label><select id="p-due">'+cs.map(function(k){var pd=paidSum(m.id,k,false);return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+cLabel(k)+(pd>=m.amount?' (fully paid)':pd>0?' (part paid)':'')+'</option>'}).join('')+'</select></div>';
+}
+function payHint(){
+  var a=$('#p-amt'),d=$('#p-due'),h=$('#p-hint'),m=me();if(!a||!d||!h||!m)return;
+  var v=parseInt((a.value||'').replace(/\D/g,''),10)||0;if(!v){h.textContent='';return}
+  var left=m.amount-paidSum(m.id,d.value,false)-v;
+  h.textContent=left>0?naira(left)+' will still remain for '+cLabel(d.value)+' after this payment.':left===0?'This completes your '+naira(m.amount)+' for '+cLabel(d.value)+'.':'This is '+naira(-left)+' more than needed for '+cLabel(d.value)+'.';
+  h.style.color=left>0?'var(--bad)':'var(--ok)';
+}
+function unitPay(){return db.settings.unitPayout||150000}
+function receiveFor(a){return Math.round(a/5000)*unitPay()}
+function receiveCard(){
+  var rows=[5000,10000,15000,20000,25000,30000].map(function(a){return '<div class="item"><b>'+naira(a)+'</b><span class="amt">'+naira(receiveFor(a))+'</span></div>'}).join('');
+  return '<div class="card"><h3>What you will receive</h3><div class="row small muted"><span>You contribute</span><span>You receive</span></div><div class="list">'+rows+'</div><p class="small muted">It goes up by '+naira(unitPay())+' for every extra ₦5,000 you contribute.</p></div>';
+}
+function curRound(){var t=dnOf(Date.now());return roundKeys().filter(function(k){return keyDn(k)<=t}).length}
+function roundsGrid(m){
+  var ks=roundKeys(),t=dnOf(Date.now()),cur=curRound();
+  return '<div class="rchips" aria-label="All contributions">'+ks.map(function(k,i){
+    var c='n';
+    if(m){if(keyDn(k)>=dnOf(m.created)&&keyDn(k)<=t){var st=cycleState(m.id,k);c=st.d==='g'?'g':st.d==='y'?'y':st.d==='r'?'r':st.c==='pending'?'p':'n'}}
+    else c=keyDn(k)<t?'past':'n';
+    return '<span class="rc '+c+(i+1===cur?' cur':'')+'" title="#'+(i+1)+' · '+dueLabel(k)+'">'+(i+1)+'</span>'}).join('')+'</div>';
+}
+function periodCard(m){
+  var s=db.settings,today=dnOf(Date.now()),ks=roundKeys(),N=ks.length,st=keyDn(ks[0]),en=keyDn(endKey()),cur=curRound();
+  var state=today<st?'Not started yet':(today>en?'Ended':'Running');
+  var col=state==='Running'?'var(--ok)':state==='Ended'?'var(--bad)':'var(--warn)';
+  var big=state==='Running'?'Contribution #'+cur+' of '+N:state==='Ended'?'All '+N+' contributions done':'Starts with Contribution #1';
+  var nx=ks[cur];
+  return '<div class="card hc"><span class="label">Contribution period · '+state+'</span><b class="hbig">'+big+'</b><span class="small muted">Starts '+dueLabel(ks[0])+' · Ends '+dueLabel(endKey())+' (#'+N+')'+(nx&&state!=='Ended'?' · Next: #'+(cur+1)+' on '+dueLabel(nx):'')+'</span>'+roundsGrid(m||null)+'</div>';
+}
+function progressCard(m){
+  var k=focusCycle(m);if(!k)return '';
+  var conf=paidSum(m.id,k,true),all=paidSum(m.id,k,false),pend=all-conf,left=Math.max(0,m.amount-all);
+  var pc=Math.min(100,Math.round(conf*100/m.amount)),pa=Math.min(100,Math.round(all*100/m.amount));
+  var h='<div class="card"><h3>Your payment progress</h3><div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>For '+cLabel(k)+'</b><span class="small muted">'+naira(all)+' of '+naira(m.amount)+'</span></div>'
+   +'<div class="bar" role="progressbar" aria-label="Paid for this date" aria-valuenow="'+pa+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+pc+'%"></i><i class="pend" style="width:'+Math.max(0,pa-pc)+'%"></i></div></div>';
+  if(left>0)h+='<p style="color:var(--bad)"><b>'+naira(left)+' remaining.</b> <span class="muted small">Send the balance to complete this date.</span></p>';
+  else h+='<p style="color:var(--ok)"><b>Paid in full for this date.</b></p>';
+  if(pend>0)h+='<p class="small muted">'+naira(pend)+' of what you sent is waiting for the admin to confirm.</p>';
+  var cnt=fullCyclesFor(m).length,exp=m.amount*cnt;
+  var tc=db.payments.filter(function(x){return x.mid===m.id&&x.status==='confirmed'}).reduce(function(t,x){return t+x.amount},0);
+  var po=exp?Math.min(100,Math.round(tc*100/exp)):0;
+  h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>'+'Whole contribution'+'</b><span class="small muted">'+naira(tc)+' of '+naira(exp)+' ('+po+'%)</span></div><div class="bar" role="progressbar" aria-label="Total paid" aria-valuenow="'+po+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+po+'%"></i></div></div>';
+  return h+'</div>';
+}
+function entOf(pos){var p=(db.settings.payouts||{})[pos];return (p&&p.amt)||unitPay()}
+function payoutsOf(mid){return (db.payouts||[]).filter(function(x){return x.mid===mid})}
+function paidOutFor(mid,pos){return payoutsOf(mid).filter(function(x){return pos==null||x.pos===pos}).reduce(function(t,x){return t+(x.amount||0)},0)}
+function totalPaidOut(){return (db.payouts||[]).reduce(function(t,x){return t+(x.amount||0)},0)}
+function payoutRows(){
+  var rows=[],t=dnOf(Date.now());
+  db.members.forEach(function(m){mSpins(m).forEach(function(sp){
+    var ent=entOf(sp.pos),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),st;
+    if(paid>=ent)st='full';else if(due&&keyDn(due)<=t)st=paid>0?'part':'due';else st=paid>0?'part':'wait';
+    rows.push({m:m,pos:sp.pos,ent:ent,paid:paid,left:Math.max(0,ent-paid),due:due,st:st})})});
+  return rows.sort(function(a,b){return (a.due?keyDn(a.due):1e9)-(b.due?keyDn(b.due):1e9)||a.pos-b.pos});
+}
+function rowPill(r){return r.st==='full'?'<span class="pill green">Collected in full</span>':r.st==='part'?'<span class="pill yellow">Part paid</span>':r.st==='due'?'<span class="pill pending">Due now</span>':'<span class="pill grey">Not due yet</span>'}
+function barHTML(a,b){var pc=b?Math.min(100,Math.round(a*100/b)):0;return '<div class="bar" role="progressbar" aria-valuenow="'+pc+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+pc+'%"></i></div>'}
+function myPayoutCard(m){
+  var sp=mSpins(m),hist=payoutsOf(m.id).sort(function(a,b){return b.at-a.at});
+  if(!sp.length&&!hist.length)return '';
+  var rows=payoutRows().filter(function(r){return r.m.id===m.id}),ent=0,paid=0;
+  rows.forEach(function(r){ent+=r.ent;paid+=r.paid});
+  var h='<div class="card"><h3>Your payout</h3>';
+  if(!rows.length)h+='<p class="muted small">Spin for your number to see when you collect.</p>';
+  rows.forEach(function(r){
+    h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>Number '+r.pos+'</b>'+rowPill(r)+'</div><span class="small muted">'+(r.due?'Collects on Contribution #'+r.pos+' · '+dueLabel(r.due):'This number is after the last contribution')+'</span>'+barHTML(r.paid,r.ent)
+     +'<span class="small">'+(r.st==='full'?'<b style="color:var(--ok)">You have collected '+naira(r.ent)+' in full.</b>':'Collected <b>'+naira(r.paid)+'</b> of '+naira(r.ent)+' · <b>'+naira(r.left)+'</b> left')+'</span></div>';
+  });
+  if(onHold(m))h+='<p class="small" style="color:var(--bad)">Your payout is on hold because of red. Speak to the admin.</p>';
+  if(hist.length)h+='<h3 style="margin-top:6px">Money you have received</h3><div class="list">'+hist.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">'+fmt(x.at)+(x.note?' · '+esc(x.note):'')+'</span></div><span class="amt">'+naira(x.amount)+'</span></div>'}).join('')+'</div><p class="small muted">Total received: <b>'+naira(paid)+'</b> of '+naira(ent)+'</p>';
+  return h+'</div>';
+}
+function paidOutTab(){
+  var rows=payoutRows(),ent=0,paid=0;rows.forEach(function(r){ent+=r.ent;paid+=r.paid});
+  var h='<div class="grid2"><div class="stat"><span class="label">To pay out (spun numbers)</span><b class="big" style="font-size:22px">'+naira(ent)+'</b></div><div class="stat"><span class="label">Paid out</span><b class="big" style="font-size:22px">'+naira(totalPaidOut())+'</b></div><div class="stat"><span class="label">Balance</span><b class="big" style="font-size:22px">'+naira(Math.max(0,ent-paid))+'</b></div><div class="stat"><span class="label">Due now</span><b class="big">'+rows.filter(function(r){return r.st==='due'||(r.st==='part'&&r.due&&keyDn(r.due)<=dnOf(Date.now()))}).length+'</b></div></div>';
+  var open=rows.filter(function(r){return r.left>0});
+  h+='<form class="card" data-form="paidout"><h2>Record a payout</h2><p class="muted small">Use this after you have sent money to a member. You can record part payments many times until the full amount is collected.</p>'
+   +(open.length?'<div class="field"><label for="po-pick">Member and number</label><select id="po-pick">'+open.map(function(r){var v=r.m.id+'|'+r.pos;return '<option value="'+v+'"'+(ui.payPick===v?' selected':'')+'>'+esc(r.m.name)+' · Number '+r.pos+(r.due?' · '+dueLabel(r.due):'')+' · '+naira(r.left)+' left'+(onHold(r.m)?' · ON HOLD':'')+'</option>'}).join('')+'</select></div>'
+   +'<div class="field"><label for="po-amt">Amount paid (₦)</label><input id="po-amt" inputmode="numeric" required></div><div class="field"><label for="po-note">Note (optional)</label><input id="po-note" maxlength="80" placeholder="Example: sent by transfer"></div><button class="btn" type="submit">Record payout</button>':'<p class="empty">No spun numbers waiting to be paid.</p>')+'</form>';
+  h+='<div class="card"><h2>Who collects</h2>'+(rows.length?'<div class="list">'+rows.map(function(r){
+    var b=r.m.payout?esc(r.m.payout.bank)+' · '+esc(r.m.payout.number)+' · '+esc(r.m.payout.name):'No bank account added';
+    return '<div class="item"><div style="flex:1;min-width:0"><b>'+esc(r.m.name)+'</b> · Number '+r.pos+(onHold(r.m)?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+(r.due?'Contribution #'+r.pos+' · '+dueLabel(r.due):'After the last contribution')+'<br>'+b+'</span>'+barHTML(r.paid,r.ent)+'<span class="small">'+naira(r.paid)+' of '+naira(r.ent)+(r.left?' · '+naira(r.left)+' left':'')+'</span>'
+     +(r.left?'<div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn ghost sm" data-act="payfill" data-v="'+r.m.id+'|'+r.pos+'">Record payment</button></div>':'')+'</div><div>'+rowPill(r)+'</div></div>'}).join('')+'</div>':'<p class="empty">Nobody has spun a number yet.</p>')+'</div>';
+  var hist=(db.payouts||[]).slice().sort(function(a,b){return b.at-a.at});
+  h+='<div class="card"><h3>Payout history</h3>'+(hist.length?'<div class="list">'+hist.map(function(x){var m=memberById(x.mid)||{name:'Removed'};return '<div class="item"><div><b>'+esc(m.name)+'</b> · Number '+x.pos+'<br><span class="small muted">'+fmt(x.at)+(x.note?' · '+esc(x.note):'')+'</span></div><div style="text-align:right"><div class="amt">'+naira(x.amount)+'</div><button class="btn bad sm" data-act="delpayout" data-id="'+x.id+'">Undo</button></div></div>'}).join('')+'</div>':'<p class="empty">No payouts recorded yet.</p>')+'</div>';
+  return h;
 }
 function save(){if(CLOUD)return true;memStore=db;try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false}}
-var ui={auth:'register',tab:'home',chat:false,atab:'overview',thread:null,draft:'',err:'',recording:false,spinning:false,booting:CLOUD,cloudErr:'',dirty:false,seenAt:null,rd:{},settingsMissing:false};
+var ui={payPick:'',holdOk:false,auth:'register',tab:'home',chat:false,atab:'overview',thread:null,draft:'',err:'',recording:false,spinning:false,booting:CLOUD,cloudErr:'',dirty:false,seenAt:null,rd:{},settingsMissing:false};
 var rec=null,recTimer=null;
 
 function me(){return db.session&&db.session.role==='member'?db.members.filter(function(m){return m.id===db.session.memberId})[0]:null}
@@ -280,7 +436,7 @@ function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.po
 function wheelNumbers(){var b={};(db.settings.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=db.settings.slots;i++)if(!b[i])out.push(i);return out}
 function payoutText(pos){var p=(db.settings.payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
 function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span>'+((me()&&onHold(me()))?'<br><span class="pill red">Receiving on hold</span>':'')+'</div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
-function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,cycle:s.cycle,spinOpen:!!s.spinOpen,v2:1}}
+function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,cycle:s.cycle,spinOpen:!!s.spinOpen,v2:1}}
 function pushSettings(){if(!CLOUD){save();return Promise.resolve()}return fs.doc('settings/main').set(pubSettings()).catch(function(){toast('Could not save. Check your internet.')})}
 function updMember(id,patch){
   if(CLOUD){fs.collection('members').doc(id).update(patch).catch(function(){toast('Could not save. Check your internet.')});return}
@@ -321,14 +477,14 @@ function stopAll(a){while(a.length){try{a.pop()()}catch(e){}}}
 function onErr(e){console.error(e);ui.cloudErr=(e&&e.code==='permission-denied')?'The database rules are not published yet, or this account is not allowed to see this.':'Could not reach the database. Check your internet.';softRender()}
 function startPublic(){
   unsubPub.push(fs.doc('settings/main').onSnapshot(function(d){
-    db.settings=Object.assign(defaults(),d.exists?d.data():{});db.settings.cycle='Every 10 days';if(!db.settings.opayNumber){db.settings.opayName=defaults().opayName;db.settings.opayNumber=defaults().opayNumber}
+    db.settings=Object.assign(defaults(),d.exists?d.data():{});if(d.exists&&!d.data().rounds)db.settings.rounds=0;fixRounds(db.settings);db.settings.cycle='Every 10 days';if(!db.settings.opayNumber){db.settings.opayName=defaults().opayName;db.settings.opayNumber=defaults().opayNumber}
     ui.settingsMissing=!d.exists;if(!d.exists&&isAdmin())pushSettings();
     ui.cloudErr='';softRender();
   },onErr));
   unsubPub.push(fs.collection('notices').onSnapshot(function(q){db.notices=q.docs.map(normDoc);softRender()},onErr));
 }
 function startUser(u){
-  stopAll(unsubUser);db.members=[];db.payments=[];db.messages=[];db.spots={};
+  stopAll(unsubUser);db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={};
   var admin=!!(ADMIN_EMAIL&&u.email&&u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase());
   db.session=admin?{role:'admin'}:{role:'member',memberId:u.uid};
   var C=function(n){return fs.collection(n)};
@@ -338,10 +494,12 @@ function startUser(u){
     listen(C('members'),function(q){db.members=q.docs.map(normDoc)});
     listen(C('payments'),function(q){db.payments=q.docs.map(normDoc)});
     listen(C('messages'),function(q){db.messages=q.docs.map(normDoc)});
+    listen(C('payouts'),function(q){db.payouts=q.docs.map(normDoc)});
   }else{
     listen(C('members').doc(u.uid),function(d){db.members=d.exists?[normDoc(d)]:[]});
     listen(C('payments').where('mid','==',u.uid),function(q){db.payments=q.docs.map(normDoc)});
     listen(C('messages').where('mid','==',u.uid),function(q){db.messages=q.docs.map(normDoc)});
+    listen(C('payouts').where('mid','==',u.uid),function(q){db.payouts=q.docs.map(normDoc)});
   }
   listen(C('spots'),function(q){var o={};q.forEach(function(d){o[d.id]=d.data().holders||[]});db.spots=o});
 }
@@ -356,14 +514,14 @@ function authView(){
   var s=db.settings;
   var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(s.group)+'</b></div></div>';
   h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th.</p></div>';
-  h+=noticeBoard();
+  h+=noticeBoard();h+=periodCard();h+=receiveCard();
   h+='<div class="seg"><button data-act="auth" data-v="register" class="'+(ui.auth==='register'?'on':'')+'">Register</button><button data-act="auth" data-v="login" class="'+(ui.auth==='login'?'on':'')+'">Log in</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
   if(ui.auth==='register'){
     h+='<form class="card" data-form="register" autocomplete="on"><div class="field"><label for="r-name">Full name</label><input id="r-name" name="name" required autocomplete="name"></div>'
      +'<div class="field"><label for="r-loc">Location (state)</label><input id="r-loc" name="loc" list="states" required autocomplete="address-level1" placeholder="e.g. Lagos"><datalist id="states">'+STATES.map(function(x){return '<option value="'+x+'">'}).join('')+'</datalist></div>'
      +'<div class="field"><label for="r-phone">Phone number</label><input id="r-phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="08012345678"></div>'
-     +'<div class="field"><label for="r-amt">Amount you will contribute</label><select id="r-amt" name="amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+'</option>'}).join('')+'</select><span class="small muted">Starts at ₦5,000 and goes up by ₦5,000.</span></div>'
+     +'<div class="field"><label for="r-amt">Amount you will contribute</label><select id="r-amt" name="amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+' \u00B7 you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select><span class="small muted">Starts at ₦5,000 and goes up by ₦5,000.</span></div>'
      +'<p class="label" style="margin-top:4px">Where should we send your money on your turn?</p>'+acctFields('r',null)
      +'<div class="field"><label for="r-pin">Create a 6-digit PIN for login</label><input id="r-pin" name="pin" type="password" inputmode="numeric" pattern="\\d{6}" maxlength="6" required autocomplete="new-password"></div>'
      +'<label style="display:flex;gap:10px;align-items:flex-start;font-size:13px"><input type="checkbox" id="r-agree" required style="width:22px;min-height:22px;margin-top:1px"><span>I have read the rules. I understand that any red on my list puts my ajo receiving on hold.</span></label><button class="btn" type="submit">Create my account</button></form>';
@@ -392,12 +550,12 @@ function homeView(m){
   var mine=db.payments.filter(function(p){return p.mid===m.id});
   var conf=mine.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
   var pend=mine.filter(function(p){return p.status==='pending'}).length;
-  var h=noticeBoard()+(onHold(m)?holdBanner(m):'')+'<div class="card"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span></div>';
+  var h=noticeBoard()+periodCard(m)+(onHold(m)?holdBanner(m):'')+'<div class="card hc"><span class="label">Your contribution</span><span class="big">'+naira(m.amount)+'</span><span class="muted small">'+esc(db.settings.cycle)+' · '+esc(m.location)+'</span><span><b>You will receive '+naira(receiveFor(m.amount))+'</b></span></div>';
   h+='<div class="grid2"><div class="stat"><span class="label">Paid so far</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Awaiting check</span><b class="big" style="font-size:22px">'+pend+'</b></div></div>';
-  h+=scheduleCard(m);h+=protocolHTML();
+  h+=progressCard(m);h+=myPayoutCard(m);h+=scheduleCard(m);h+=protocolHTML();
   h+=payoutCard(m);
   h+='<div class="card"><h2>Make a payment</h2><p class="muted small">Transfer to this Opay account, then tell us here so the admin can confirm it.</p>'+payBlock(m)
-   +'<form data-form="pay">'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent</label><select id="p-amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'"'+(a===m.amount?' selected':'')+'>'+naira(a)+'</option>'}).join('')+'</select></div>'
+   +'<form data-form="pay">'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent (₦)</label><input id="p-amt" inputmode="numeric" required value="'+(Math.max(0,m.amount-paidSum(m.id,focusCycle(m),false))||m.amount)+'"><span id="p-hint" class="small"></span></div>'
    +'<div class="field"><label for="p-ref">Transfer reference (optional)</label><input id="p-ref" placeholder="Last digits of the Opay receipt"></div>'
    +'<button class="btn gold" type="submit">I have paid</button></form></div>';
   var sp0=mSpins(m),left0=spinsLeft(m);
@@ -466,14 +624,16 @@ function memberShell(m){
 function adminShell(){
   var s=db.settings,pend=db.payments.filter(function(p){return p.status==='pending'}).length,un=unreadFor('admin');
   var h='<div class="wrap">'+topbar();
-  h+='<div class="atabs">'+[['overview','Overview',0],['notice','Notices',0],['payments','Payments',pend],['tracker','Tracker',0],['payouts','Numbers',0],['members','Members',0],['messages','Messages',un],['settings','Settings',0]].map(function(t){return '<button data-act="atab" data-v="'+t[0]+'" class="'+(ui.atab===t[0]?'on':'')+'">'+t[1]+(t[2]?' ('+t[2]+')':'')+'</button>'}).join('')+'</div>';
+  h+='<div class="atabs">'+[['overview','Overview',0],['notice','Notices',0],['payments','Payments',pend],['paidout','Paid out',0],['tracker','Tracker',0],['payouts','Numbers',0],['members','Members',0],['messages','Messages',un],['settings','Settings',0]].map(function(t){return '<button data-act="atab" data-v="'+t[0]+'" class="'+(ui.atab===t[0]?'on':'')+'">'+t[1]+(t[2]?' ('+t[2]+')':'')+'</button>'}).join('')+'</div>';
   if(!s.opayNumber)h+='<div class="notice">Set your Opay account name and number in Settings so members know where to pay.</div>';
   if(ui.atab==='overview'){
-    h+=spinSwitch();
+    h+=spinSwitch();h+=periodCard();
     var conf=db.payments.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
     var hd=holders(),spun=0,spotsAll=0;wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))});
-    h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
+    h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Paid out</span><b class="big" style="font-size:22px">'+naira(totalPaidOut())+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
     h+='<div class="card"><h3>Needs attention</h3>'+(pend||un||db.members.some(onHold)?'<p>'+(pend?pend+' payment(s) waiting for confirmation. ':'')+(un?un+' unread message(s). ':'')+(db.members.some(onHold)?db.members.filter(onHold).length+' member(s) have red, so their payout is on hold.':'')+'</p>':'<p class="muted">Nothing waiting.</p>')+'</div>';
+    var pdue=payoutRows().filter(function(r){return r.st==='due'}).length;
+    if(pdue)h+='<div class="card"><h3>Payouts due now</h3><p>'+pdue+' member number(s) are due to collect.</p><button class="btn" data-act="atab" data-v="paidout">Open Paid out</button></div>';
   }
   if(ui.atab==='payments'){
     var ps=db.payments.slice().sort(function(a,b){return (a.status==='pending'?0:1)-(b.status==='pending'?0:1)||b.at-a.at});
@@ -486,7 +646,7 @@ function adminShell(){
   }
   if(ui.atab==='members'){
     h+='<div class="card"><h2>Members</h2>'+(db.members.length?'<div class="list">'+db.members.map(function(m){
-      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHold(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHold(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redCycles(m).map(dueLabel).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right"><div class="amt">'+naira(m.amount)+'</div><span class="small muted">'+(mSpins(m).length?'Numbers '+mSpins(m).map(function(x){return '#'+x.pos}).join(', '):'Not spun')+' ('+mSpins(m).length+'/'+allowedSpins(m)+' spins)</span>'+(mSpins(m).length?'<br><button class="btn ghost sm" data-act="resetspin" data-id="'+m.id+'" style="margin-top:6px">Reset spins</button>':'')+'</div></div>';
+      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHold(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHold(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redCycles(m).map(cLabel).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right"><div class="amt">'+naira(m.amount)+'</div><span class="small muted">'+(mSpins(m).length?'Numbers '+mSpins(m).map(function(x){return '#'+x.pos}).join(', '):'Not spun')+' ('+mSpins(m).length+'/'+allowedSpins(m)+' spins)</span>'+(mSpins(m).length?'<br><button class="btn ghost sm" data-act="resetspin" data-id="'+m.id+'" style="margin-top:6px">Reset spins</button>':'')+'</div></div>';
     }).join('')+'</div>':'<p class="empty">No members yet. Share the link so people can register.</p>')+'</div>';
   }
   if(ui.atab==='messages'){
@@ -508,6 +668,7 @@ function adminShell(){
     var ns=sortedNotices();
     h+='<div class="card"><h3>Posted notices</h3>'+(ns.length?'<div class="list">'+ns.map(function(x){return '<div class="item"><div>'+(x.title?'<b>'+esc(x.title)+'</b><br>':'')+'<span style="white-space:pre-wrap">'+esc(x.text)+'</span><br><span class="small muted">'+fmt(x.at)+'</span></div><button class="btn bad sm" data-act="delnotice" data-id="'+(CLOUD?x.id:x.id)+'">Delete</button></div>'}).join('')+'</div>':'<p class="empty">No notices yet.</p>')+'</div>';
   }
+  if(ui.atab==='paidout')h+=paidOutTab();
   if(ui.atab==='payouts'){
     var tk2=holders(),bl2={};(s.blocked||[]).forEach(function(x){bl2[x]=1});
     h+=spinSwitch();
@@ -521,7 +682,7 @@ function adminShell(){
   }
   if(ui.atab==='tracker'){
     var cs=allCycles().slice(-6);
-    h+='<div class="card"><h2>Payment tracker</h2>'+legendHTML()+(db.members.length?'<div class="trk"><table><thead><tr><th>Member</th>'+cs.map(function(k){return '<th>'+dueLabel(k).replace(/ \d{4}$/,'')+'</th>'}).join('')+'</tr></thead><tbody>'
+    h+='<div class="card"><h2>Payment tracker</h2>'+legendHTML()+(db.members.length?'<div class="trk"><table><thead><tr><th>Member</th>'+cs.map(function(k){return '<th>#'+roundNo(k)+'<br><span class="small muted">'+dueLabel(k).replace(/ \d{4}$/,'')+'</span></th>'}).join('')+'</tr></thead><tbody>'
      +db.members.map(function(mb){var rd=dnOf(mb.created);return '<tr><td><b>'+esc(mb.name)+'</b>'+(onHold(mb)?'<br><span class="pill red">On hold</span>':'')+'</td>'+cs.map(function(k){
         if(keyDn(k)<rd)return '<td class="muted">-</td>';var s=cycleState(mb.id,k);
         return '<td><div><i class="dotc '+s.d+'"></i><span class="small muted">'+esc(s.paid?s.t:(s.d==='n'?'':s.t))+'</span></div></td>'}).join('')+'</tr>'}).join('')
@@ -535,7 +696,9 @@ function adminShell(){
      +'<div class="field"><label for="s-slots">Number of positions on the wheel</label><input id="s-slots" type="number" min="2" max="100" value="'+s.slots+'" required></div>'
      +'<div class="field"><label for="s-block">Numbers the wheel must never land on</label><input id="s-block" placeholder="Example: 13, 7" value="'+esc((s.blocked||[]).join(', '))+'"><span class="small muted">Separate with commas. These numbers are removed from the wheel.</span></div>'
      +'<div class="field"><label for="s-cycle">Payout cycle</label><select id="s-cycle">'+['Every 10 days'].map(function(c){return '<option'+(c===s.cycle?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div>'
-     +'<div class="field"><label for="s-start">First collection date (a 10th, 20th or 30th)</label><input id="s-start" type="date" value="'+esc(s.start)+'" required></div>'
+     +'<div class="field"><label for="s-start">Contribution starts (first collection date: a 10th, 20th or 30th)</label><input id="s-start" type="date" value="'+esc(s.start)+'" required></div>'
+     +'<div class="field"><label for="s-rounds">Total number of contributions</label><input id="s-rounds" type="number" min="1" max="200" value="'+(+s.rounds||31)+'" required><span class="small muted">Contribution #1 is the start date, then every 10th, 20th and 30th after it. The last one is #'+(+s.rounds||31)+' on '+dueLabel(endKey())+'.</span></div>'
+     +'<div class="field"><label for="s-unit">Payout for every \u20A65,000 contributed (\u20A6)</label><input id="s-unit" inputmode="numeric" value="'+esc(s.unitPayout||150000)+'" required><span class="small muted">Members see this: \u20A65,000 receives \u20A6150,000, \u20A610,000 receives \u20A6300,000, and so on.</span></div>'
      +(CLOUD?'<p class="small muted">Your admin login is the email and password you created in Firebase.</p>':'<div class="field"><label for="s-pin">Admin PIN</label><input id="s-pin" inputmode="numeric" value="'+esc(s.adminPin)+'" required></div>')
      +'<button class="btn" type="submit">Save settings</button></form>';
   }
@@ -648,7 +811,7 @@ function render(){
   if(!ui.booting&&!isAdmin())h+=noticePopup();
   if(ui.cloudErr)h='<div class="banner"><div class="err" role="alert">'+esc(ui.cloudErr)+'</div></div>'+h;
   app.innerHTML=h;
-  drawWheel();
+  drawWheel();payHint();
   var th=$('#thread');if(th)th.scrollTop=th.scrollHeight;
   if(ui.chat&&me()){markRead('member',me().id)}
   if(isAdmin()&&ui.atab==='messages'&&ui.thread){markRead('admin',ui.thread)}
@@ -661,8 +824,9 @@ function markRead(role,mid){
   var ch=false;db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read){m.read=true;ch=true}});
   if(ch)save();
 }
-document.addEventListener('input',function(e){if(e.target.id==='msg')ui.draft=e.target.value});
-document.addEventListener('change',function(e){if(e.target.id==='audioFile'&&e.target.files[0]){blobToMsg(e.target.files[0]);e.target.value=''}});
+document.addEventListener('input',function(e){if(e.target.id==='msg')ui.draft=e.target.value;if(e.target.id==='p-amt')payHint()});
+document.addEventListener('change',function(e){if(e.target.id==='p-due'){var m0=me();if(m0){var r0=m0.amount-paidSum(m0.id,e.target.value,false);$('#p-amt').value=r0>0?r0:m0.amount}payHint()}
+  if(e.target.id==='audioFile'&&e.target.files[0]){blobToMsg(e.target.files[0]);e.target.value=''}});
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
   if(t.classList.contains('sheet')&&e.target.closest('[data-stop]'))return;
@@ -674,6 +838,8 @@ document.addEventListener('click',function(e){
   else if(a==='atab'){ui.atab=v;ui.thread=null;render()}
   else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=db.settings.slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
   else if(a==='release'){var rm=memberById(id);if(rm){updMember(rm.id,{released:!rm.released});render()}}
+  else if(a==='payfill'){ui.payPick=v;ui.holdOk=false;render();var pa=$('#po-amt');if(pa)pa.focus()}
+  else if(a==='delpayout'){if(CLOUD){fs.collection('payouts').doc(id).delete().catch(function(){toast('Could not undo.')})}else{db.payouts=db.payouts.filter(function(x){return x.id!==id});save();render()}toast('Payout removed')}
   else if(a==='seen'){markSeen(Number(id));render()}
   else if(a==='togglespin'){db.settings.spinOpen=!db.settings.spinOpen;pushSettings();render();toast(db.settings.spinOpen?'Spinning is now open':'Spinning is now closed')}
   else if(a==='delnotice'){delNotice(id)}
@@ -740,7 +906,8 @@ document.addEventListener('submit',function(e){
     if(!g('bank')||!g('acname')){toast('Choose your bank and enter the account name.');return}
     updMember(me().id,{payout:{bank:g('bank'),number:ac,name:g('acname')}});ui.editAcct=false;render();toast('Payout account saved');
   }else if(k==='pay'){
-    var m2=me(),pd={mid:m2.id,amount:Number($('#p-amt').value),ref:$('#p-ref').value.trim(),status:'pending',cat:null,due:$('#p-due').value};
+    var pamt=parseInt(($('#p-amt').value||'').replace(/\D/g,''),10)||0;if(pamt<1||pamt>10000000){toast('Enter the amount you sent.');return}
+    var m2=me(),pd={mid:m2.id,amount:pamt,ref:$('#p-ref').value.trim(),status:'pending',cat:null,due:$('#p-due').value};
     if(CLOUD){pd.at=ts();fs.collection('payments').add(pd).catch(function(){toast('Payment not saved. Check your internet and try again.')})}
     else{pd.id=uid();pd.at=Date.now();db.payments.push(pd);save()}
     ui.tab='history';render();toast('Payment recorded. The admin will confirm it.');
@@ -752,6 +919,16 @@ document.addEventListener('submit',function(e){
     var nobj={title:ntl,text:nt};
     if(CLOUD){nobj.at=ts();fs.collection('notices').add(nobj).then(function(){toast('Notice posted')},function(){toast('Could not post. Check your internet.')});$('#n-text').value='';$('#n-title').value=''}
     else{nobj.id=uid();nobj.at=Date.now();db.notices.push(nobj);save();render();toast('Notice posted')}
+  }else if(k==='paidout'){
+    var pk=($('#po-pick').value||'').split('|'),prow=payoutRows().filter(function(r){return r.m.id===pk[0]&&String(r.pos)===pk[1]})[0];
+    var pv=parseInt(($('#po-amt').value||'').replace(/\D/g,''),10)||0;
+    if(!prow||pv<1){toast('Enter the amount you paid.');return}
+    if(pv>prow.left){toast('That is more than the balance ('+naira(prow.left)+').');return}
+    if(onHold(prow.m)&&!ui.holdOk){ui.holdOk=true;toast(prow.m.name+' has red, so payout is on hold. Press Record payout again to pay anyway.');return}
+    ui.holdOk=false;ui.payPick='';
+    var po0={mid:prow.m.id,pos:prow.pos,amount:pv,note:($('#po-note').value||'').trim()};
+    if(CLOUD){po0.at=ts();fs.collection('payouts').add(po0).then(function(){toast('Payout recorded')},function(){toast('Could not save. Check your internet.')})}
+    else{po0.id=uid();po0.at=Date.now();db.payouts.push(po0);save();render();toast('Payout recorded')}
   }else if(k==='payouts'){
     var po2={},bad=0;for(var q=1;q<=db.settings.slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp||1}}
     if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return}db.settings.payouts=po2;pushSettings();render();toast('Payouts saved');
@@ -762,8 +939,11 @@ document.addEventListener('submit',function(e){
     var bl=[];$('#s-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=slots&&bl.indexOf(v)<0)bl.push(v)});bl.sort(function(a,b){return a-b});
     var tkn=holders(),clash=bl.filter(function(v){return tkn[v]});
     if(clash.length){toast('Number '+clash[0]+' is already taken by a member, so it cannot be blocked.');return}
+    var stv=$('#s-start').value||s.start,rv=Math.max(1,Math.min(200,parseInt($('#s-rounds').value,10)||s.rounds||31));
+    if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}
+    var unitv=parseInt(($('#s-unit').value||'').replace(/\D/g,''),10)||s.unitPayout||150000;
     s.blocked=bl;
-    s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=$('#s-start').value||s.start;
+    s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=stv;s.rounds=rv;s.end=endKey();s.unitPayout=unitv;
     if(!CLOUD)s.adminPin=$('#s-pin').value.trim()||s.adminPin;
     pushSettings();render();toast('Settings saved');
   }
@@ -780,7 +960,7 @@ if(CLOUD){
   startPublic();
   fauth.onAuthStateChanged(function(u){
     ui.booting=false;stopAll(unsubUser);ui.chat=false;ui.thread=null;
-    if(u){startUser(u)}else{db.session=null;db.members=[];db.payments=[];db.messages=[];db.spots={}}
+    if(u){startUser(u)}else{db.session=null;db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={}}
     render();
   });
   setTimeout(function(){if(ui.booting){ui.booting=false;render()}},8000);
