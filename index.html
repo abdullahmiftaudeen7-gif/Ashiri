@@ -752,9 +752,9 @@ function doSpin(){
   requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
   var commit=CLOUD?cloudSpin(m,pos):Promise.resolve();
   var wait=new Promise(function(r){setTimeout(r,6200)});
-  Promise.all([commit.then(function(){return null},function(e){return e||'fail'}),wait]).then(function(r){
+  Promise.all([commit.then(function(){return null},function(e){console.error(e);return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){
     var err=r[0];
-    if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':'That number was just taken. Spin again.');render();return}
+    if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':err==='taken'?'That number was just taken. Spin again.':err==='permission-denied'?'Spin blocked by the database rules. Admin: republish the rules.':err==='unavailable'||err==='network-request-failed'?'No internet. Please try again.':'Spin could not be saved ('+err+'). Please try again.');render();return}
     if(!CLOUD){
       var cur=memberById(m.id),again=takenFor(cur);
       if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
