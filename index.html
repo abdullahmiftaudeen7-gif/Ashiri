@@ -4,6 +4,7 @@
 <meta property="og:type" content="website"><meta property="og:title" content="Ashiri International Contribution"><meta property="og:description" content="Ashiri International Contribution is a Nigerian ajo savings group. Register, pay on the 10th, 20th and 30th, spin for your payout number and track your payments.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Ashiri International Contribution</title>
+<link%20rel="icon"%20type="image/svg+xml"%20href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Ccircle%20cx=%2232%22%20cy=%2232%22%20r=%2231%22%20fill=%22%23073B2C%22/%3E%3Ccircle%20cx=%2232%22%20cy=%2232%22%20r=%2229.2%22%20fill=%22none%22%20stroke=%22%23F2B632%22%20stroke-width=%222%22/%3E%3Ccircle%20cx=%2255.5%22%20cy=%2232%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2248.6%22%20cy=%2248.6%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2232%22%20cy=%2255.5%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2215.4%22%20cy=%2248.6%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%228.5%22%20cy=%2232%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2215.4%22%20cy=%2215.4%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2232%22%20cy=%228.5%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2248.6%22%20cy=%2215.4%22%20r=%221.9%22%20fill=%22%23F2B632%22/%3E%3Cpath%20d=%22M20.5%2046%20L32%2018%20L43.5%2046%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%225.6%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22/%3E%3Ccircle%20cx=%2232%22%20cy=%2237.5%22%20r=%224.3%22%20fill=%22%23F2B632%22/%3E%3Ccircle%20cx=%2232%22%20cy=%2237.5%22%20r=%221.6%22%20fill=%22%23073B2C%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
 /* Ashiri look: deep-emerald "coin" cards, pale mint ground, gold only for actions, floating pill navigation */
@@ -49,9 +50,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;margin:0 -16px;
   background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;min-width:0}
-.brand b{line-height:1.1;font-size:15px;letter-spacing:.005em}
-.mark{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 30% 25%,var(--deep-2),var(--deep));display:grid;place-items:center;flex:none;box-shadow:0 0 0 2px var(--gold),0 6px 14px -6px rgba(6,55,42,.7)}
-.mark svg{width:19px;height:19px}
+.mark{width:42px;height:42px;display:block;flex:none;filter:drop-shadow(0 6px 8px rgba(6,55,42,.28))}
+.mark svg{width:100%;height:100%;display:block}
+.brand b{display:flex;flex-direction:column;line-height:1.05}
+.brand .w1{font-size:19px;font-weight:800;letter-spacing:.07em}
+.brand .w2{font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--muted)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0;box-shadow:var(--shadow)}
 .card.hc{background:
   radial-gradient(circle at 104% -6%,transparent 0 70px,rgba(255,255,255,.07) 70px 71px,transparent 71px 104px,rgba(255,255,255,.06) 104px 105px,transparent 105px 140px,rgba(242,182,50,.16) 140px 141px,transparent 141px),
@@ -218,7 +221,7 @@ var ICON={
  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>',
  stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
- logo:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="#fff"/></svg>'
+ logo:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="1" y="1" width="62" height="62" rx="17" fill="#073B2C"/><rect x="1.8" y="1.8" width="60.4" height="60.4" rx="16.2" fill="none" stroke="#F2B632" stroke-width="1.6"/><g transform="rotate(-13 32 32)"><rect x="10" y="16" width="44" height="28" rx="4.5" fill="#3FBF88"/><rect x="13.5" y="19.5" width="37" height="21" rx="2.5" fill="none" stroke="#073B2C" stroke-opacity=".35" stroke-width="1.3"/></g><g transform="rotate(7 32 36)"><rect x="9" y="22" width="46" height="29" rx="4.5" fill="#F6D777"/><rect x="12.6" y="25.6" width="38.8" height="21.8" rx="2.6" fill="none" stroke="#073B2C" stroke-opacity=".4" stroke-width="1.3"/><circle cx="32" cy="36.5" r="9.2" fill="#073B2C"/><path d="M27.6 41.2 V31.8 L36.4 41.2 V31.8" fill="none" stroke="#F2B632" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.6 35 H38.4 M25.6 38 H38.4" stroke="#F2B632" stroke-width="1.6" stroke-linecap="round"/><circle cx="17" cy="36.5" r="2" fill="#073B2C" fill-opacity=".45"/><circle cx="47" cy="36.5" r="2" fill="#073B2C" fill-opacity=".45"/></g></svg>'
 };
 var BANKS=['Access Bank','Citibank Nigeria','Ecobank Nigeria','Fidelity Bank','First Bank of Nigeria','First City Monument Bank (FCMB)','Globus Bank','Guaranty Trust Bank (GTBank)','Heritage Bank','Jaiz Bank','Keystone Bank','Lotus Bank','Optimus Bank','Parallex Bank','Polaris Bank','Premium Trust Bank','Providus Bank','Signature Bank','Stanbic IBTC Bank','Standard Chartered Bank','Sterling Bank','SunTrust Bank','TAJBank','Titan Trust Bank','Union Bank','United Bank for Africa (UBA)','Unity Bank','Wema Bank','Zenith Bank','Opay','PalmPay','Kuda Bank','Moniepoint MFB','Carbon','FairMoney MFB','VFD Microfinance Bank','Sparkle','Paga','Other bank'];
 function bankSelect(id,sel){return '<select id="'+id+'" name="bank" required><option value="">Select your bank</option>'+BANKS.map(function(b){return '<option'+(b===sel?' selected':'')+'>'+esc(b)+'</option>'}).join('')+'</select>'}
@@ -577,9 +580,10 @@ function startUser(u){
 function unreadFor(role,mid){return db.messages.filter(function(m){return !m.read&&m.from!==role&&(role==='admin'||m.mid===mid)}).length}
 
 /* ---------- views ---------- */
+function brandName(g){g=String(g||'');var p=g.split(' ');return p.length>1?'<span class="w1">'+esc(p[0])+'</span><span class="w2">'+esc(p.slice(1).join(' '))+'</span>':'<span class="w1">'+esc(g)+'</span>'}
 function topbar(){
   var who=me()?esc(me().name.split(' ')[0]):'Admin';
-  return '<div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(db.settings.group)+'</b></div><button class="btn ghost sm" data-act="logout">Log out ('+who+')</button></div>';
+  return '<div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+brandName(db.settings.group)+'</b></div><button class="btn ghost sm" data-act="logout">Log out ('+who+')</button></div>';
 }
 function regAmounts(){
   var on=mOpen();
@@ -588,7 +592,7 @@ function regAmounts(){
 }
 function authView(){
   var s=db.settings;
-  var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(s.group)+'</b></div></div>';
+  var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+brandName(s.group)+'</b></div></div>';
   h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th.</p></div>';
   h+=noticeBoard();h+=inS('d',function(){return periodCard()+receiveCard()})+(mOpen()?inS('m',function(){return periodCard()+receiveCard()}):'');
   h+='<div class="seg"><button data-act="auth" data-v="register" class="'+(ui.auth==='register'?'on':'')+'">Register</button><button data-act="auth" data-v="login" class="'+(ui.auth==='login'?'on':'')+'">Log in</button></div>';
@@ -610,7 +614,7 @@ function authView(){
   return h+'</div>';
 }
 function adminLoginView(){
-  var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(db.settings.group)+' Admin</b></div><button class="btn ghost sm" data-act="auth" data-v="login">Back</button></div>';
+  var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+brandName(db.settings.group+' Admin')+'</b></div><button class="btn ghost sm" data-act="auth" data-v="login">Back</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
   h+=CLOUD?'<form class="card" data-form="admin"><h2>Admin login</h2><div class="field"><label for="a-email">Admin email</label><input id="a-email" name="email" type="email" required autocomplete="username"></div><div class="field"><label for="a-pw">Password</label><input id="a-pw" name="pw" type="password" required autocomplete="current-password"></div><button class="btn" type="submit">Enter</button></form></div>':'<form class="card" data-form="admin"><h2>Admin login</h2><div class="field"><label for="a-pin">Admin PIN</label><input id="a-pin" name="pin" type="password" inputmode="numeric" required autocomplete="current-password"></div><button class="btn" type="submit">Enter</button></form></div>';
   return h;
