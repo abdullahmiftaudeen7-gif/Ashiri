@@ -190,6 +190,25 @@ a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cur
 'use strict';
 var KEY='ajo_circle_v1';
 var STATES=['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT Abuja','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+function planOf(a){return (SS().plans||[]).filter(function(p){return p.pay===a})[0]}
+function amountOptions(){var pl=SS().plans||[];return pl.length?pl.map(function(p){return p.pay}):AMOUNTS}
+function parsePlans(txt){
+  var out=[],seen={},lines=(txt||'').split(/\n/);
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i].trim();if(!ln)continue;
+    var n=(ln.replace(/,(?=\d{3}(\D|$))/g,'').match(/\d+/g)||[]).map(Number);
+    if(n.length<2)return{err:'Plan line '+(i+1)+': write the amount to pay and the amount received, for example 200000, 2000000, 1'};
+    var pay=n[0],get=n[1],sp=n[2]||1;
+    if(pay<5000||pay%5000)return{err:'Plan line '+(i+1)+': the amount to pay must be ₦5,000 or more, in steps of ₦5,000.'};
+    if(get<1)return{err:'Plan line '+(i+1)+': enter the amount received.'};
+    if(sp<1||sp>Math.floor(pay/5000))return{err:'Plan line '+(i+1)+': spins must be between 1 and '+Math.floor(pay/5000)+'.'};
+    if(seen[pay])return{err:'Plan line '+(i+1)+': ₦'+pay.toLocaleString()+' is listed twice.'};
+    seen[pay]=1;out.push({pay:pay,get:get,spins:sp});
+  }
+  if(out.length>40)return{err:'Please use 40 plans or fewer.'};
+  return{plans:out.sort(function(a,b){return a.pay-b.pay})};
+}
+function plansText(pl){return (pl||[]).map(function(p){return p.pay+', '+p.get+', '+p.spins}).join('\n')}
 var AMOUNTS=[];for(var a=5000;a<=200000;a+=5000)AMOUNTS.push(a);
 var ICON={
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>',
@@ -228,13 +247,14 @@ var MEMBER_DOMAIN='@ashiri-members.com';
 var CLOUD=false,fauth=null,fs=null,unsubPub=[],unsubUser=[];
 (function(){try{if(FIREBASE_CONFIG&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);fauth=firebase.auth();fs=firebase.firestore();CLOUD=true}}catch(e){CLOUD=false}})();
 function ts(){return firebase.firestore.FieldValue.serverTimestamp()}
-function defaults(){var p=lp(Date.now());return{group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,end:'',rounds:31,unitPayout:150000,start:p.y+'-'+pad(p.m)+'-10',m:mDefaults()}}
+function defaults(){var p=lp(Date.now());return{plans:[],group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,end:'',rounds:31,unitPayout:150000,start:p.y+'-'+pad(p.m)+'-10',m:mDefaults()}}
 function fresh(){return{settings:defaults(),members:[],payments:[],payouts:[],mspots:{},messages:[],notices:[],spots:{},session:null}}
 var SC='d';
 function inS(sc,fn){var o=SC;SC=sc;try{return fn()}finally{SC=o}}
 function SSof(sc){return sc==='m'?db.settings.m:db.settings}
 function SS(){return SSof(SC)}
-function mOn(){return !!(db.settings.m&&db.settings.m.on)}
+function mOn(){var M=db.settings.m;return !!(M&&(M.on||M.used))}
+function mOpen(){return !!(db.settings.m&&db.settings.m.on)}
 function joined(m,sc){return sc==='m'?(mOn()&&(m.mamount||0)>0):(m.amount||0)>0}
 function amt(m){return (SC==='m'?m.mamount:m.amount)||0}
 function jd(m){return (SC==='m'?m.mjoined:m.djoined)||m.created}
@@ -244,12 +264,12 @@ function pfx(){return SC==='m'?'Monthly #':'Contribution #'}
 function rn(k){return (mOn()?(SC==='m'?'Monthly ':'10-day '):'')+'#'+roundNo(k)}
 function collectTxt(){return SC==='m'?'Monthly contribution is collected once a month, on the 30th (the last day in February).':'Contribution is collected every 10 days: the 10th, 20th and 30th.'}
 function curAdminSc(){return (mOn()&&ui.asc==='m')?'m':'d'}
-function mDefaults(){var p=lp(Date.now()),last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate();return{on:false,start:p.y+'-'+pad(p.m)+'-'+pad(Math.min(30,last)),rounds:12,slots:12,blocked:[],payouts:{},unitPayout:150000,spinOpen:false}}
+function mDefaults(){var p=lp(Date.now()),last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate();return{plans:[],on:false,used:false,start:p.y+'-'+pad(p.m)+'-'+pad(Math.min(30,last)),rounds:12,slots:12,blocked:[],payouts:{},unitPayout:150000,spinOpen:false}}
 function fixM(s){s.m=Object.assign(mDefaults(),s.m||{});if(!validMonthly(s.m.start))s.m.start=mDefaults().start;return s}
 var memStore=null;
 function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return memStore||fresh()}
 var db=CLOUD?fresh():load();
-(function(){var s=db.settings;if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;if(s.end===undefined)s.end='';fixRounds(s);db.payouts=db.payouts||[];if(!s.unitPayout)s.unitPayout=150000;db.notices=db.notices||[];db.spots=db.spots||{};db.mspots=db.mspots||{};fixM(s);if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
+(function(){var s=db.settings;if(!s.plans)s.plans=[];if(!s.opayNumber){s.opayName=defaults().opayName;s.opayNumber=defaults().opayNumber}if(s.spinOpen===undefined)s.spinOpen=false;if(s.end===undefined)s.end='';fixRounds(s);db.payouts=db.payouts||[];if(!s.unitPayout)s.unitPayout=150000;db.notices=db.notices||[];db.spots=db.spots||{};db.mspots=db.mspots||{};fixM(s);if(!s.v2){s.v2=1;if(s.slots===10)s.slots=31;s.blocked=s.blocked||[];s.payouts=s.payouts||{};db.members.forEach(function(m){if(m.spin&&!m.spins)m.spins=[m.spin];delete m.spin;if(!m.spins)m.spins=[]})}s.cycle='Every 10 days';if(!s.start){var p=lp(Date.now());s.start=p.y+'-'+pad(p.m)+'-10'}})();
 /* ---- due dates: 10th, 20th, 30th (last day in February) ---- */
 function pad(n){return (n<10?'0':'')+n}
 function lp(t){var s=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t)).split('-');return{y:+s[0],m:+s[1],d:+s[2]}}
@@ -361,10 +381,10 @@ function payHint0(){
   h.style.color=left>0?'var(--bad)':'var(--ok)';
 }
 function unitPay(){return SS().unitPayout||150000}
-function receiveFor(a){return Math.round(a/5000)*unitPay()}
+function receiveFor(a){var p=planOf(a);return p?p.get:Math.round(a/5000)*unitPay()}
 function receiveCard(){
-  var rows=[5000,10000,15000,20000,25000,30000].map(function(a){return '<div class="item"><b>'+naira(a)+'</b><span class="amt">'+naira(receiveFor(a))+'</span></div>'}).join('');
-  return '<div class="card"><h3>What you will receive'+(mOn()?' · '+schName(SC):'')+'</h3><div class="row small muted"><span>You contribute</span><span>You receive</span></div><div class="list">'+rows+'</div><p class="small muted">It goes up by '+naira(unitPay())+' for every extra ₦5,000 you contribute.</p></div>';
+  var pls=SS().plans||[],rows=(pls.length?amountOptions().slice(0,12):[5000,10000,15000,20000,25000,30000]).map(function(a){return '<div class="item"><b>'+naira(a)+'</b><span class="amt">'+naira(receiveFor(a))+'</span></div>'}).join('');
+  return '<div class="card"><h3>What you will receive'+(mOn()?' · '+schName(SC):'')+'</h3><div class="row small muted"><span>You contribute</span><span>You receive</span></div><div class="list">'+rows+'</div>'+(pls.length?'':'<p class="small muted">It goes up by '+naira(unitPay())+' for every extra ₦5,000 you contribute.</p>')+'</div>';
 }
 function curRound(){var t=dnOf(Date.now());return roundKeys().filter(function(k){return keyDn(k)<=t}).length}
 function roundsGrid(m){
@@ -398,7 +418,7 @@ function progressCard(m){
   h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>'+'Whole contribution'+'</b><span class="small muted">'+naira(tc)+' of '+naira(exp)+' ('+po+'%)</span></div><div class="bar" role="progressbar" aria-label="Total paid" aria-valuenow="'+po+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+po+'%"></i></div></div>';
   return h+'</div>';
 }
-function entOf(pos){var p=(SS().payouts||{})[pos];return (p&&p.amt)||unitPay()}
+function entOf(pos,m){var p=(SS().payouts||{})[pos];return (p&&p.amt)||(m?Math.round(receiveFor(amt(m))/allowedSpins(m)):unitPay())}
 function payoutsOf(mid){return (db.payouts||[]).filter(function(x){return x.mid===mid&&scOf(x)===SC})}
 function paidOutFor(mid,pos){return payoutsOf(mid).filter(function(x){return pos==null||x.pos===pos}).reduce(function(t,x){return t+(x.amount||0)},0)}
 function totalPaidOut(){return (db.payouts||[]).reduce(function(t,x){return t+(x.amount||0)},0)}
@@ -407,7 +427,7 @@ function payoutRows(){
   ['d','m'].forEach(function(sc){inS(sc,function(){
     if(sc==='m'&&!mOn())return;
     db.members.forEach(function(m){if(!joined(m,sc))return;mSpins(m).forEach(function(sp){
-      var ent=entOf(sp.pos),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),st;
+      var ent=entOf(sp.pos,m),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),st;
       if(paid>=ent)st='full';else if(due&&keyDn(due)<=t)st=paid>0?'part':'due';else st=paid>0?'part':'wait';
       rows.push({m:m,pos:sp.pos,ent:ent,paid:paid,left:Math.max(0,ent-paid),due:due,st:st,sc:sc,hold:onHold(m)})})})})});
   return rows.sort(function(a,b){return (a.due?keyDn(a.due):1e9)-(b.due?keyDn(b.due):1e9)||a.pos-b.pos});
@@ -477,7 +497,7 @@ function normPhone(p){var d=String(p).replace(/\D/g,'');if(d.indexOf('234')===0&
 function validPhone(d){return /^0[789][01]\d{8}$/.test(d)}
 function memberById(id){return db.members.filter(function(m){return m.id===id})[0]}
 function mSpins(m){return (SC==='m'?m.mspins:m.spins)||[]}
-function allowedSpins(m){return Math.max(1,Math.floor(amt(m)/5000))}
+function allowedSpins(m){var p=planOf(amt(m));return p?p.spins:Math.max(1,Math.floor(amt(m)/5000))}
 function spinsLeft(m){return Math.max(0,allowedSpins(m)-mSpins(m).length)}
 function capOf(pos){var p=(SS().payouts||{})[pos];return Math.max(1,(p&&p.ppl)||1)}
 function holders(){if(CLOUD){var hc={},src=(SC==='m'?db.mspots:db.spots)||{};Object.keys(src).forEach(function(k){if((src[k]||[]).length)hc[k]=src[k]});return hc}var h={};db.members.forEach(function(m){mSpins(m).forEach(function(x){(h[x.pos]=h[x.pos]||[]).push(m.id)})});return h}
@@ -486,7 +506,7 @@ function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.po
 function wheelNumbers(){var ss=SS(),b={};(ss.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=ss.slots;i++)if(!b[i])out.push(i);return out}
 function payoutText(pos){var p=(SS().payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
 function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span>'+((me()&&onHold(me()))?'<br><span class="pill red">Receiving on hold</span>':'')+'</div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
-function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,cycle:s.cycle,spinOpen:!!s.spinOpen,m:(function(){var M=s.m||mDefaults();return{on:!!M.on,start:M.start,rounds:+M.rounds||12,slots:+M.slots||12,blocked:M.blocked||[],payouts:M.payouts||{},unitPayout:+M.unitPayout||150000,spinOpen:!!M.spinOpen}})(),v2:1}}
+function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,cycle:s.cycle,spinOpen:!!s.spinOpen,plans:s.plans||[],m:(function(){var M=s.m||mDefaults();return{on:!!M.on,used:!!(M.used||M.on),start:M.start,rounds:+M.rounds||12,slots:+M.slots||12,blocked:M.blocked||[],payouts:M.payouts||{},unitPayout:+M.unitPayout||150000,spinOpen:!!M.spinOpen,plans:M.plans||[]}})(),v2:1}}
 function pushSettings(){if(!CLOUD){save();return Promise.resolve()}return fs.doc('settings/main').set(pubSettings()).catch(function(){toast('Could not save. Check your internet.')})}
 function updMember(id,patch){
   if(CLOUD){fs.collection('members').doc(id).update(patch).catch(function(){toast('Could not save. Check your internet.')});return}
@@ -562,15 +582,15 @@ function topbar(){
   return '<div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(db.settings.group)+'</b></div><button class="btn ghost sm" data-act="logout">Log out ('+who+')</button></div>';
 }
 function regAmounts(){
-  var on=mOn();
-  function blk(sc,id,cb){return inS(sc,function(){return '<div class="field">'+(on?'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="'+cb+'" name="'+cb+'"'+(sc==='d'?' checked':'')+' style="width:22px;min-height:22px"><span><b>'+(sc==='m'?'Monthly contribution':'10-day contribution')+'</b> <span class="small muted">'+(sc==='m'?'once a month, on the 30th':'10th, 20th and 30th')+'</span></span></label>':'<label for="'+id+'">Amount you will contribute</label>')+'<select id="'+id+'" name="'+(sc==='m'?'mamt':'amt')+'">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+' · you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select><span class="small muted">'+(on?'':'Starts at ₦5,000 and goes up by ₦5,000.')+'</span></div>'})}
+  var on=mOpen();
+  function blk(sc,id,cb){return inS(sc,function(){return '<div class="field">'+(on?'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="'+cb+'" name="'+cb+'"'+(sc==='d'?' checked':'')+' style="width:22px;min-height:22px"><span><b>'+(sc==='m'?'Monthly contribution':'10-day contribution')+'</b> <span class="small muted">'+(sc==='m'?'once a month, on the 30th':'10th, 20th and 30th')+'</span></span></label>':'<label for="'+id+'">Amount you will contribute</label>')+'<select id="'+id+'" name="'+(sc==='m'?'mamt':'amt')+'">'+amountOptions().map(function(a){return '<option value="'+a+'">'+naira(a)+' · you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select><span class="small muted">'+(on?'':'Starts at ₦5,000 and goes up by ₦5,000.')+'</span></div>'})}
   return blk('d','r-amt','jd')+(on?blk('m','r-mamt','jm')+'<p class="small muted">You can join one or both. Each has its own amount, its own number and its own payout.</p>':'');
 }
 function authView(){
   var s=db.settings;
   var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+esc(s.group)+'</b></div></div>';
   h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th.</p></div>';
-  h+=noticeBoard();h+=inS('d',function(){return periodCard()+receiveCard()})+(mOn()?inS('m',function(){return periodCard()+receiveCard()}):'');
+  h+=noticeBoard();h+=inS('d',function(){return periodCard()+receiveCard()})+(mOpen()?inS('m',function(){return periodCard()+receiveCard()}):'');
   h+='<div class="seg"><button data-act="auth" data-v="register" class="'+(ui.auth==='register'?'on':'')+'">Register</button><button data-act="auth" data-v="login" class="'+(ui.auth==='login'?'on':'')+'">Log in</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
   if(ui.auth==='register'){
@@ -623,7 +643,7 @@ function spinView(m){
   var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]}).length,sp=mSpins(m),left=spinsLeft(m),total=allowedSpins(m);
   var h='<div class="card"><h2>Spin for your number</h2><p class="muted small">The number the wheel stops on is your turn to collect. Grey numbers are already taken by other members.</p>';
   h+='<div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="680" height="680" aria-label="Spin wheel"></canvas><div class="hub">AJO</div></div>';
-  h+='<p style="text-align:center"><b>'+left+' of '+total+(total>1?' spins':' spin')+' left</b><br><span class="small muted">'+naira(amt(m))+' gives '+total+(total>1?' spins':' spin')+' (₦5,000 = 1 spin)</span></p>';
+  h+='<p style="text-align:center"><b>'+left+' of '+total+(total>1?' spins':' spin')+' left</b><br><span class="small muted">'+naira(amt(m))+' gives '+total+(total>1?' spins':' spin')+(planOf(amt(m))?'':' (₦5,000 = 1 spin)')+'</span></p>';
   if(left<1)h+='<p class="small muted" style="text-align:center">You have used all your spins.</p>';
   else if(!SS().spinOpen)h+='<div class="notice">Spinning is not open yet. The admin opens it after the first contribution is completed. Check the notice board for the announcement.</div>';
   else if(free>0)h+='<button class="btn gold" data-act="spin" id="spinbtn"'+(ui.spinning?' disabled':'')+'>Spin now</button><p class="small muted" style="text-align:center">'+free+' of '+nums.length+' numbers still open</p>';
@@ -669,8 +689,8 @@ function memberSc(m){var a=joined(m,'d'),b=joined(m,'m');return a&&b?(ui.sc==='m
 function schSwitch(m){if(!(joined(m,'d')&&joined(m,'m')))return '';var c=memberSc(m);return '<div class="seg"><button data-act="scpick" data-v="d" class="'+(c==='d'?'on':'')+'">10-day</button><button data-act="scpick" data-v="m" class="'+(c==='m'?'on':'')+'">Monthly</button></div>'}
 function ascSwitch(){if(!mOn())return '';var c=curAdminSc();return '<div class="seg"><button data-act="ascpick" data-v="d" class="'+(c==='d'?'on':'')+'">10-day</button><button data-act="ascpick" data-v="m" class="'+(c==='m'?'on':'')+'">Monthly</button></div>'}
 function joinCard(m){
-  var sc=(mOn()&&!joined(m,'m'))?'m':(!joined(m,'d')?'d':'');if(!sc)return '';
-  return inS(sc,function(){return '<form class="card" data-form="join" data-sch="'+sc+'"><h3>Join the '+schName(sc)+' contribution too</h3><p class="muted small">'+collectTxt()+' It has its own numbers and its own payout.</p><div class="field"><label for="j-amt">Amount you will contribute</label><select id="j-amt">'+AMOUNTS.map(function(a){return '<option value="'+a+'">'+naira(a)+' · you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select></div><button class="btn" type="submit">Join '+schName(sc)+'</button></form>'});
+  var sc=(mOpen()&&!joined(m,'m'))?'m':(!joined(m,'d')?'d':'');if(!sc)return '';
+  return inS(sc,function(){return '<form class="card" data-form="join" data-sch="'+sc+'"><h3>Join the '+schName(sc)+' contribution too</h3><p class="muted small">'+collectTxt()+' It has its own numbers and its own payout.</p><div class="field"><label for="j-amt">Amount you will contribute</label><select id="j-amt">'+amountOptions().map(function(a){return '<option value="'+a+'">'+naira(a)+' · you receive '+naira(receiveFor(a))+'</option>'}).join('')+'</select></div><button class="btn" type="submit">Join '+schName(sc)+'</button></form>'});
 }
 function memberShell(m){
   var h='<div class="wrap">'+topbar();
@@ -691,12 +711,13 @@ function memberSchemes(m){
 function monthlySettingsHTML(){
   var M=db.settings.m;
   return '<div class="card" style="background:var(--soft);box-shadow:none"><h3>Monthly contribution</h3><p class="small muted">A second contribution, collected once a month on the 30th (last day in February). It has its own numbers, payouts and spin.</p>'
-   +'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="sm-on" style="width:22px;min-height:22px"'+(M.on?' checked':'')+'><b>Turn on the monthly contribution</b></label>'
+   +'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="sm-on" style="width:22px;min-height:22px"'+(M.on?' checked':'')+'><b>Accept new members for the monthly contribution</b></label><p class="small muted">Turning this off only closes new sign-ups. Members who already joined the monthly contribution keep it, and everything for them continues as normal.</p>'
    +'<div class="field"><label for="sm-start">Monthly starts (first collection: the 30th of a month)</label><input id="sm-start" type="date" value="'+esc(M.start)+'"></div>'
    +'<div class="field"><label for="sm-rounds">Total number of monthly contributions</label><input id="sm-rounds" type="number" min="1" max="200" value="'+(+M.rounds||12)+'"></div>'
    +'<div class="field"><label for="sm-slots">Number of positions on the monthly wheel</label><input id="sm-slots" type="number" min="2" max="100" value="'+(+M.slots||12)+'"></div>'
    +'<div class="field"><label for="sm-block">Monthly numbers the wheel must never land on</label><input id="sm-block" value="'+esc((M.blocked||[]).join(', '))+'"></div>'
-   +'<div class="field"><label for="sm-unit">Monthly payout for every ₦5,000 contributed (₦)</label><input id="sm-unit" inputmode="numeric" value="'+esc(M.unitPayout||150000)+'"></div></div>';
+   +'<div class="field"><label for="sm-unit">Monthly payout for every ₦5,000 contributed (₦)</label><input id="sm-unit" inputmode="numeric" value="'+esc(M.unitPayout||150000)+'"></div>'
+   +'<div class="field"><label for="sm-plans">Monthly contribution plans (optional)</label><textarea id="sm-plans" rows="4" placeholder="200000, 2000000, 1">'+esc(plansText(M.plans))+'</textarea><span class="small muted">One plan per line: amount to pay, amount received, number of spins. Leave empty to use ₦5,000 steps.</span></div></div>';
 }
 function adminShell(){
   var s=db.settings,pend=db.payments.filter(function(p){return p.status==='pending'}).length,un=unreadFor('admin');
@@ -778,6 +799,7 @@ function adminShell(){
      +'<div class="field"><label for="s-start">Contribution starts (first collection date: a 10th, 20th or 30th)</label><input id="s-start" type="date" value="'+esc(s.start)+'" required></div>'
      +'<div class="field"><label for="s-rounds">Total number of contributions</label><input id="s-rounds" type="number" min="1" max="200" value="'+(+s.rounds||31)+'" required><span class="small muted">Contribution #1 is the start date, then every 10th, 20th and 30th after it. The last one is #'+(+s.rounds||31)+' on '+dueLabel(endKey())+'.</span></div>'
      +'<div class="field"><label for="s-unit">Payout for every \u20A65,000 contributed (\u20A6)</label><input id="s-unit" inputmode="numeric" value="'+esc(s.unitPayout||150000)+'" required><span class="small muted">Members see this: \u20A65,000 receives \u20A6150,000, \u20A610,000 receives \u20A6300,000, and so on.</span></div>'
+     +'<div class="field"><label for="s-plans">Contribution plans (optional)</label><textarea id="s-plans" rows="4" placeholder="200000, 2000000, 1">'+esc(plansText(s.plans))+'</textarea><span class="small muted">One plan per line: amount to pay, amount received, number of spins. Example: 200000, 2000000, 1 means pay ₦200,000, receive ₦2,000,000 and spin once. Members then choose only from these plans. Leave empty to use ₦5,000 steps with the payout above.</span></div>'
      +monthlySettingsHTML()
      +(CLOUD?'<p class="small muted">Your admin login is the email and password you created in Firebase.</p>':'<div class="field"><label for="s-pin">Admin PIN</label><input id="s-pin" inputmode="numeric" value="'+esc(s.adminPin)+'" required></div>')
      +'<button class="btn" type="submit">Save settings</button></form>';
@@ -811,7 +833,8 @@ function cloudSpin(m,pos){
       var cap=Math.max(1,((ss.payouts||{})[pos]||{}).ppl||1);
       if(hs.indexOf(m.id)>-1||hs.length>=cap)throw 'taken';
       var sp=mem[fld]||[];
-      if(sp.length>=Math.max(1,Math.floor((mem[afld]||0)/5000)))throw 'nospin';
+      var pl0=(ss.plans||[]).filter(function(x){return x.pay===(mem[afld]||0)})[0];
+      if(sp.length>=(pl0?pl0.spins:Math.max(1,Math.floor((mem[afld]||0)/5000))))throw 'nospin';
       t.set(sref,{holders:hs.concat([m.id])});
       var up={};up[fld]=sp.concat([{pos:pos,at:at}]);t.update(mref,up);
     });
@@ -1038,13 +1061,14 @@ document.addEventListener('submit',function(e){
     var stv=$('#s-start').value||s.start,rv=Math.max(1,Math.min(200,parseInt($('#s-rounds').value,10)||s.rounds||31));
     if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}
     var unitv=parseInt(($('#s-unit').value||'').replace(/\D/g,''),10)||s.unitPayout||150000;
+    var pr=parsePlans($('#s-plans').value),mpr=parsePlans($('#sm-plans').value);if(pr.err||mpr.err){toast(pr.err||mpr.err);return}
     var M=s.m,mon=!!$('#sm-on').checked,mst=$('#sm-start').value||M.start,mr=Math.max(1,Math.min(200,parseInt($('#sm-rounds').value,10)||M.rounds||12)),msl=Math.max(2,Math.min(100,parseInt($('#sm-slots').value,10)||M.slots||12)),mu=parseInt(($('#sm-unit').value||'').replace(/\D/g,''),10)||M.unitPayout||150000;
     if(!validMonthly(mst)){toast('The monthly start date must be the 30th of a month (the last day in February).');return}
     var mbl=[];$('#sm-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=msl&&mbl.indexOf(v)<0)mbl.push(v)});mbl.sort(function(a,b){return a-b});
     var mchk=inS('m',function(){var h2=holders(),ks=Object.keys(h2).map(Number),mx2=ks.length?Math.max.apply(null,ks):0;if(msl<mx2)return 'Some members already hold monthly number '+mx2+'. Reset their spins first.';var c=mbl.filter(function(v){return h2[v]})[0];if(c)return 'Monthly number '+c+' is already taken, so it cannot be blocked.';return ''});
     if(mchk){toast(mchk);return}
-    M.on=mon;M.start=mst;M.rounds=mr;M.slots=msl;M.blocked=mbl;M.unitPayout=mu;
-    s.blocked=bl;
+    M.plans=mpr.plans;M.on=mon;if(mon)M.used=true;M.start=mst;M.rounds=mr;M.slots=msl;M.blocked=mbl;M.unitPayout=mu;
+    s.blocked=bl;s.plans=pr.plans;
     s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=stv;s.rounds=rv;s.end=endKey();s.unitPayout=unitv;
     if(!CLOUD)s.adminPin=$('#s-pin').value.trim()||s.adminPin;
     pushSettings();render();toast('Settings saved');
