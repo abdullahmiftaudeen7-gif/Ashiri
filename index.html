@@ -196,11 +196,24 @@ a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cur
 <noscript><p style="padding:16px">Please turn on JavaScript to use the Ashiri International Contribution website.</p></noscript>
 <div id="toast" class="toast" hidden></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+/* Load Firebase without freezing the page: try Google, then a backup host, then start the app anyway */
 (function(){
+  var names=['app','auth','firestore'],hosts=['https://www.gstatic.com/firebasejs/10.12.2/firebase-','https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-'],started=false;
+  function go(){if(started)return;started=true;try{window.__ashiriStart()}catch(e){var a=document.getElementById('app');if(a)a.innerHTML='<div style="padding:24px 16px"><h2>Something went wrong</h2><p>Please refresh the page.</p></div>'}}
+  setTimeout(go,12000);
+  function load(i,h){
+    if(i>=names.length)return go();
+    var sc=document.createElement('script'),t=setTimeout(function(){sc.onerror()},6000),dn=false;
+    sc.onload=function(){if(dn)return;dn=true;clearTimeout(t);load(i+1,0)};
+    sc.onerror=function(){if(dn)return;dn=true;clearTimeout(t);if(h+1<hosts.length)load(i,h+1);else go()};
+    sc.src=hosts[h]+names[i]+'-compat.js';document.head.appendChild(sc);
+  }
+  load(0,0);
+})();
+</script>
+<script>
+window.__ashiriStart=function(){(function(){
 'use strict';
 var KEY='ajo_circle_v1';
 var STATES=['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT Abuja','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
@@ -260,6 +273,7 @@ var ADMIN_EMAIL="abdullahmiftaudeen7@gmail.com";
 var MEMBER_DOMAIN='@ashiri-members.com';
 var CLOUD=false,fauth=null,fs=null,unsubPub=[],unsubUser=[];
 (function(){try{if(FIREBASE_CONFIG&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);fauth=firebase.auth();fs=firebase.firestore();CLOUD=true}}catch(e){CLOUD=false}})();
+if(FIREBASE_CONFIG&&!CLOUD){var _a=document.getElementById('app');if(_a)_a.innerHTML='<div style="padding:28px 18px;max-width:520px;margin:0 auto;text-align:center"><h2 style="margin:0 0 10px">ASHIRI INTERNATIONAL CONTRIBUTION</h2><p>We could not connect to the server. Please check your network, then tap the button to try again.</p><button onclick="location.reload()" style="margin-top:14px;padding:14px 22px;border:0;border-radius:12px;background:#F2B72B;color:#0B3B2A;font:700 16px system-ui;cursor:pointer">Try again</button></div>';return}
 function ts(){return firebase.firestore.FieldValue.serverTimestamp()}
 function defaults(){var p=lp(Date.now());return{plans:[],group:'ASHIRI INTERNATIONAL CONTRIBUTION',opayName:'ADBULRASHEED AWUDERE YUSUF',opayNumber:'7060451282',slots:31,blocked:[],payouts:{},v2:1,cycle:'Every 10 days',adminPin:'1234',spinOpen:false,end:'',rounds:31,unitPayout:150000,start:p.y+'-'+pad(p.m)+'-10',m:mDefaults()}}
 function fresh(){return{settings:defaults(),members:[],payments:[],payouts:[],mspots:{},messages:[],notices:[],spots:{},session:null}}
@@ -879,10 +893,4 @@ function adminShell(){
   var s=db.settings,pend=db.payments.filter(function(p){return p.status==='pending'}).length,un=unreadFor('admin');
   var h='<div class="wrap">'+topbar();
   h+='<div class="atabs">'+[['overview','Overview',0],['notice','Notices',0],['payments','Payments',pend],['paidout','Paid out',0],['tracker','Tracker',0],['payouts','Numbers',0],['members','Members',0],['messages','Messages',un],['settings','Settings',0]].map(function(t){return '<button data-act="atab" data-v="'+t[0]+'" class="'+(ui.atab===t[0]?'on':'')+'">'+t[1]+(t[2]?' ('+t[2]+')':'')+'</button>'}).join('')+'</div>';
-  if(!s.opayNumber)h+='<div class="notice">Set your Opay account name and number in Settings so members know where to pay.</div>';
-  if(ui.atab==='overview'){
-    h+=spinSwitch('d')+(mOn()?spinSwitch('m'):'');h+=inS('d',function(){return periodCard()})+(mOn()?inS('m',function(){return periodCard()}):'');
-    var conf=db.payments.filter(function(p){return p.status==='confirmed'}).reduce(function(t,p){return t+p.amount},0);
-    var spun=0,spotsAll=0;['d','m'].forEach(function(sc){if(sc==='m'&&!mOn())return;inS(sc,function(){var hd=holders();wheelNumbers().forEach(function(x){spotsAll+=capOf(x);spun+=Math.min((hd[x]||[]).length,capOf(x))})})});
-    h+='<div class="grid2"><div class="stat"><span class="label">Members</span><b class="big">'+db.members.length+'</b></div><div class="stat"><span class="label">Spots taken</span><b class="big">'+spun+' / '+spotsAll+'</b></div><div class="stat"><span class="label">Confirmed</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Paid out</span><b class="big" style="font-size:22px">'+naira(totalPaidOut())+'</b></div><div class="stat"><span class="label">To confirm</span><b class="big">'+pend+'</b></div></div>';
-    h+='<div class="card"><h3>Needs attention</h3>'+(pend||un||db.members.some(onHoldAny)?'<p>'+(pend?pend+' payment(s) waiting for confirmatio
+  if(!s.opayNumber)h+='<div class="notice">Set your
