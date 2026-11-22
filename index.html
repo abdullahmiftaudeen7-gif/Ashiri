@@ -877,4 +877,332 @@ function drawWheel(){
     var st=-Math.PI/2+i*seg,taken=!!tk[nums[i]];
     c.beginPath();c.moveTo(r,r);c.arc(r,r,r,st,st+seg);c.closePath();c.fillStyle=taken?T:(i%2?B:A);c.fill();
     c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=3;c.stroke();
-    c.save();c.translate(r,r);c.rotate(st+seg/2);c.textAlign='right';c.tex
+    c.save();c.translate(r,r);c.rotate(st+seg/2);c.textAlign='right';c.textBaseline='middle';
+    c.fillStyle=taken?XT:X;c.font='800 '+Math.max(20,Math.min(54,Math.floor(S/(n>12?(n/1.15):9))))+'px "Bricolage Grotesque",system-ui,sans-serif';
+    c.fillText(String(nums[i]),r-24,0);c.restore();
+  }
+}
+function cloudSpin(m,pos){
+  var sc=SC,sref=fs.collection(sc==='m'?'mspots':'spots').doc(String(pos)),mref=fs.collection('members').doc(m.id),setr=fs.doc('settings/main'),at=Date.now(),fld=sc==='m'?'mspins':'spins',afld=sc==='m'?'mamount':'amount';
+  return fs.runTransaction(function(t){
+    return Promise.all([t.get(sref),t.get(mref),t.get(setr)]).then(function(r){
+      var hs=(r[0].exists&&r[0].data().holders)||[],mem=r[1].data()||{},st=r[2].data()||{},ss=sc==='m'?(st.m||{}):st;
+      if(!ss.spinOpen)throw 'closed';
+      var cap=Math.max(1,((ss.payouts||{})[pos]||{}).ppl||1);
+      if(hs.indexOf(m.id)>-1||hs.length>=cap)throw 'taken';
+      var sp=mem[fld]||[];
+      var pl0=(ss.plans||[]).filter(function(x){return x.pay===(mem[afld]||0)})[0];
+      if(sp.length>=(pl0?pl0.spins:Math.max(1,Math.floor((mem[afld]||0)/5000))))throw 'nospin';
+      t.set(sref,{holders:hs.concat([m.id])});
+      var up={};up[fld]=sp.concat([{pos:pos,at:at}]);t.update(mref,up);
+    });
+  }).then(function(){
+    var c=memberById(m.id);if(c&&!(c[fld]||[]).some(function(x){return x.pos===pos}))c[fld]=(c[fld]||[]).concat([{pos:pos,at:at}]);
+    var src=sc==='m'?db.mspots:db.spots,a=src[pos]||[];if(a.indexOf(m.id)<0)src[pos]=a.concat([m.id]);
+  });
+}
+function doSpin(){var m=me();if(m)inS(memberSc(m),doSpin0)}
+function doSpin0(){var sc=SC;
+  var m=me();if(!m||ui.spinning||spinsLeft(m)<1)return;
+  if(!SS().spinOpen){toast('Spinning is not open yet.');return}
+  var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]});
+  if(!free.length){toast('All numbers are taken.');return}
+  var pos=free[rand(free.length)],n=nums.length,seg=360/n,k=nums.indexOf(pos);
+  var jitter=(Math.random()-.5)*seg*.6,theta=360*(5+rand(3))-(k+.5)*seg+jitter;
+  var cv=$('#wheel');ui.spinning=true;var b=$('#spinbtn');if(b)b.disabled=true;
+  cv.style.transition='transform 6s cubic-bezier(.12,.6,.12,1)';
+  requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
+  var commit=CLOUD?cloudSpin(m,pos):Promise.resolve();
+  var wait=new Promise(function(r){setTimeout(r,6200)});
+  Promise.all([commit.then(function(){return null},function(e){console.error(e);return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){inS(sc,function(){
+    var err=r[0];
+    if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':err==='taken'?'That number was just taken. Spin again.':err==='permission-denied'?'Spin blocked by the database rules. Admin: republish the rules.':err==='unavailable'||err==='network-request-failed'?'No internet. Please try again.':'Spin could not be saved ('+err+'). Please try again.');render();return}
+    if(!CLOUD){
+      var cur=memberById(m.id),again=takenFor(cur);
+      if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
+      var sf=sc==='m'?'mspins':'spins';cur[sf]=cur[sf]||[];cur[sf].push({pos:pos,at:Date.now()});save();
+    }
+    ui.spinning=false;render();
+  })});
+}
+/* ---------- messaging ---------- */
+function postMsg(text,audio){
+  var role=isAdmin()?'admin':'member',mid=isAdmin()?ui.thread:(me()&&me().id);
+  if(!mid)return;
+  ui.draft='';
+  if(CLOUD){
+    fs.collection('messages').add({mid:mid,from:role,text:text||'',audio:audio||'',at:ts(),read:false}).catch(function(){toast('Message not sent. Check your internet.')});
+    var mi=$('#msg');if(mi)mi.value='';return;
+  }
+  db.messages.push({id:uid(),mid:mid,from:role,text:text||'',audio:audio||'',at:Date.now(),read:false});
+  if(!save())toast('Storage is full. Voice note may not be kept.');
+  render();
+}
+function blobToMsg(blob){
+  if(blob.size>(CLOUD?600000:1500000)){toast('Voice note is too long. Keep it under about one minute.');return}
+  var fr=new FileReader();fr.onload=function(){postMsg('',fr.result)};fr.readAsDataURL(blob);
+}
+function toggleRec(){
+  if(rec){try{rec.stop()}catch(e){}return}
+  var fallback=function(){toast('Recording is not allowed here. Choose a voice note from your phone instead.');var f=$('#audioFile');if(f)f.click()};
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){fallback();return}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+    var mr;try{mr=new MediaRecorder(st,{audioBitsPerSecond:24000})}catch(e){mr=new MediaRecorder(st)}var ch=[];
+    mr.ondataavailable=function(e){if(e.data.size)ch.push(e.data)};
+    mr.onstop=function(){st.getTracks().forEach(function(t){t.stop()});clearTimeout(recTimer);rec=null;ui.recording=false;blobToMsg(new Blob(ch,{type:mr.mimeType||'audio/webm'}))};
+    mr.start();rec=mr;ui.recording=true;recTimer=setTimeout(function(){try{mr.stop()}catch(e){}},60000);render();
+  }).catch(fallback);
+}
+
+/* ---------- render + events ---------- */
+function typing(){var ae=document.activeElement,ap=$('#app');return !!(ae&&ap&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)&&ap.contains(ae))}
+function softRender(){
+  if(ui.spinning||ui.recording||typing()){ui.dirty=true;refreshThread();return}
+  render();
+}
+document.addEventListener('focusout',function(){if(!ui.dirty)return;setTimeout(function(){if(ui.dirty&&!typing()&&!ui.spinning&&!ui.recording)render()},250)});
+function render(){
+  ui.dirty=false;SC='d';
+  var app=$('#app'),h;
+  if(ui.booting)h=loadingView('Loading…');
+  else if(isAdmin())h=adminShell();
+  else if(me())h=memberShell(me());
+  else if(db.session)h=loadingView('Loading your account…',true);
+  else h=(ui.auth==='admin')?adminLoginView():authView();
+  if(!ui.booting)h+='<footer class="foot">\u00A9 '+(new Date().getFullYear())+' '+esc(db.settings.group)+'. All rights reserved.</footer>';
+  if(!ui.booting&&!isAdmin())h+=noticePopup();
+  if(!ui.booting&&isAdmin())h+=adminPayPopup();
+  if(ui.cloudErr)h='<div class="banner"><div class="err" role="alert">'+esc(ui.cloudErr)+'</div></div>'+h;
+  app.innerHTML=h;
+  inS(me()?memberSc(me()):'d',drawWheel);payHint();
+  var th=$('#thread');if(th)th.scrollTop=th.scrollHeight;
+  if(ui.chat&&me()){markRead('member',me().id)}
+  if(isAdmin()&&ui.atab==='messages'&&ui.thread){markRead('admin',ui.thread)}
+}
+function markRead(role,mid){
+  if(CLOUD){
+    db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read&&!ui.rd[m.id]){ui.rd[m.id]=1;fs.collection('messages').doc(m.id).update({read:true}).catch(function(){delete ui.rd[m.id]})}});
+    return;
+  }
+  var ch=false;db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read){m.read=true;ch=true}});
+  if(ch)save();
+}
+document.addEventListener('input',function(e){if(e.target.id==='msg')ui.draft=e.target.value;if(e.target.id==='p-amt')payHint()});
+document.addEventListener('change',function(e){if(e.target.id==='p-due'){var m0=me();if(m0){inS(memberSc(m0),function(){var r0=amt(m0)-paidSum(m0.id,e.target.value,false);$('#p-amt').value=r0>0?r0:amt(m0)})}payHint()}
+  if(e.target.id==='audioFile'&&e.target.files[0]){blobToMsg(e.target.files[0]);e.target.value=''}});
+var deferredInstall=null;
+function isStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true}
+function installCard(){
+  if(isStandalone()||ui.noInstall||!/^https?:$/.test(location.protocol))return '';
+  var ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua);
+  var body=deferredInstall?'Install it on your phone and open it like any other app.':ios?'On iPhone: tap the Share button in Safari, then <b>Add to Home Screen</b>.':'Open your browser menu (⋮) and tap <b>Install app</b> or <b>Add to Home screen</b>.';
+  return '<div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:14px"><span class="mark" style="width:46px;height:46px">'+ICON.logo+'</span><div style="flex:1;min-width:0"><b>Get the Ashiri app</b><br><span class="small muted">'+body+'</span></div>'+(deferredInstall?'<button class="btn gold sm" data-act="install">Install</button>':'')+'<button class="btn ghost sm" data-act="noinstall" aria-label="Hide this">✕</button></div>';
+}
+try{ui.noInstall=localStorage.getItem('ashiri_noinst')==='1'}catch(e){}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstall=e;softRender()});
+window.addEventListener('appinstalled',function(){deferredInstall=null;softRender()});
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js').catch(function(){})}catch(e){}})}
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');if(!t)return;
+  if(t.classList.contains('sheet')&&e.target.closest('[data-stop]'))return;
+  var a=t.dataset.act,v=t.dataset.v,id=t.dataset.id;
+  if(a==='auth'){ui.auth=v;ui.err='';if((location.hash||'').toLowerCase()==='#admin'){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}render()}
+  else if(a==='adminlogin'){ui.auth='admin';ui.err='';render()}
+  else if(a==='adminreset'){
+    var em=(($('#a-email')||{}).value||'').trim();
+    if(!em){toast('Type your admin email above first.');return}
+    fauth.sendPasswordResetEmail(em).then(function(){toast('Reset link sent. Check that email inbox.')}).catch(function(er){toast(er&&er.code==='auth/invalid-email'?'That email is not valid.':er&&er.code==='auth/user-not-found'?'No admin account uses that email.':authMsg(er,true))});
+  }
+  else if(a==='logout'){ui.chat=false;ui.adminPopSeen=false;ui.delAsk='';ui.auth=((location.hash||'').toLowerCase()==='#admin')?'admin':'login';ui.err='';ui.thread=null;ui.tab='home';if(CLOUD){fauth.signOut();return}db.session=null;save();render()}
+  else if(a==='tab'){ui.tab=v;render()}
+  else if(a==='atab'){ui.atab=v;ui.thread=null;render()}
+  else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=SSof(curAdminSc()).slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
+  else if(a==='release'){var rm=memberById(id);if(rm){updMember(rm.id,{released:!rm.released});render()}}
+  else if(a==='payfill'){ui.payPick=v;ui.holdOk=false;render();var pa=$('#po-amt');if(pa)pa.focus()}
+  else if(a==='delpayout'){if(CLOUD){fs.collection('payouts').doc(id).delete().catch(function(){toast('Could not undo.')})}else{db.payouts=db.payouts.filter(function(x){return x.id!==id});save();render()}toast('Payout removed')}
+  else if(a==='adminpop'){ui.adminPopSeen=true;render()}
+  else if(a==='adminpopgo'){ui.adminPopSeen=true;ui.atab='paidout';render()}
+  else if(a==='delask'){ui.delAsk=id;render()}
+  else if(a==='delno'){ui.delAsk='';render()}
+  else if(a==='delmember'){ui.delAsk='';removeMember(id)}
+  else if(a==='seen'){markSeen(Number(id));render()}
+  else if(a==='togglespin'){var tso=SSof(v==='m'?'m':'d');tso.spinOpen=!tso.spinOpen;pushSettings();render();toast(tso.spinOpen?'Spinning is now open':'Spinning is now closed')}
+  else if(a==='delnotice'){delNotice(id)}
+  else if(a==='editacct'){ui.editAcct=!ui.editAcct;render()}
+  else if(a==='spin'){doSpin()}
+  else if(a==='install'){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;softRender()},function(){})}}
+  else if(a==='noinstall'){ui.noInstall=true;try{localStorage.setItem('ashiri_noinst','1')}catch(x){}render()}
+  else if(a==='scpick'){ui.sc=v;render()}
+  else if(a==='ascpick'){ui.asc=v;render()}
+  else if(a==='openchat'){ui.chat=true;render()}
+  else if(a==='closechat'){ui.chat=false;render()}
+  else if(a==='openthread'){ui.thread=id;render()}
+  else if(a==='closethread'){ui.thread=null;render()}
+  else if(a==='mic'){toggleRec()}
+  else if(a==='copy'){var n=db.settings.opayNumber;
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(n):Promise.reject()).then(function(){toast('Account number copied')},function(){var el=$('#acctnum');if(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Number selected. Press and hold to copy.')})}
+  else if(a==='confirm'||a==='reject'){var p=db.payments.filter(function(x){return x.id===id})[0];if(p){var stt=a==='confirm'?'confirmed':'rejected';if(CLOUD){fs.collection('payments').doc(id).update({status:stt,cat:ts()}).catch(function(){toast('Could not update. Check your internet.')});return}p.status=stt;p.cat=Date.now();save();render()}}
+  else if(a==='confirmgrp'||a==='rejectgrp'){var gp=db.payments.filter(function(x){return x.id===id})[0];if(gp){var gl=db.payments.filter(function(x){return x.status==='pending'&&x.mid===gp.mid&&x.at===gp.at}),gst=a==='confirmgrp'?'confirmed':'rejected';
+    if(CLOUD){var gbt=fs.batch();gl.forEach(function(x){gbt.update(fs.collection('payments').doc(x.id),{status:gst,cat:ts()})});gbt.commit().catch(function(){toast('Could not update. Check your internet.')});return}
+    gl.forEach(function(x){x.status=gst;x.cat=Date.now()});save();render()}}
+  else if(a==='resetspin'){var mm=memberById(id);if(mm){var rsc=v==='m'?'m':'d',fld=rsc==='m'?'mspins':'spins',col=rsc==='m'?'mspots':'spots';
+    if(CLOUD){var bt=fs.batch();inS(rsc,function(){mSpins(mm).forEach(function(x){bt.update(fs.collection(col).doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(mm.id)})})});var rpatch={};rpatch[fld]=[];bt.update(fs.collection('members').doc(mm.id),rpatch);bt.commit().then(function(){toast('Spins reset for '+mm.name)},function(){toast('Could not reset. Check your internet.')});return}
+    mm[fld]=[];save();render();toast('Spins reset for '+mm.name)}}
+});
+document.addEventListener('submit',function(e){
+  var f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();
+  var k=f.dataset.form,g=function(n){var el=f.elements[n];return el?el.value.trim():''};
+  if(k==='register'){
+    var phone=normPhone(g('phone')),pin=g('pin');
+    if(!validPhone(phone)){ui.err='Enter a valid Nigerian phone number, like 08012345678.';render();return}
+    if(!/^\d{6}$/.test(pin)){ui.err='PIN must be exactly 6 digits.';render();return}
+    var acno=g('acno').replace(/\s/g,'');
+    if(!/^\d{10}$/.test(acno)){ui.err='Account number must be 10 digits.';render();return}
+    if(!g('bank')||!g('acname')){ui.err='Choose your bank and enter the account name.';render();return}
+    var prof={name:g('name'),location:g('loc'),phone:phone,amount:0,mamount:0,payout:{bank:g('bank'),number:acno,name:g('acname')}};
+    var jdE=f.elements['jd'],jmE=f.elements['jm'],wantD=!jdE||jdE.checked,wantM=!!(jmE&&jmE.checked);
+    if(!wantD&&!wantM){ui.err='Choose at least one contribution to join.';render();return}
+    prof.amount=wantD?Number(g('amt')):0;prof.mamount=wantM?Number(g('mamt')):0;
+    if(CLOUD){
+      var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
+      var cu=null;
+      fauth.createUserWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){
+        cu=c.user;
+        return fs.collection('members').doc(c.user.uid).set({name:prof.name,location:prof.location,phone:prof.phone,amount:prof.amount,mamount:prof.mamount,created:ts(),spins:[],mspins:[],released:false,payout:prof.payout});
+      }).then(function(){ui.err='';ui.tab='home';toast('Welcome, '+prof.name.split(' ')[0]+'.')}).catch(function(er){
+        if(cu){cu.delete().catch(function(){});}
+        if(er&&er.code==='auth/email-already-in-use')ui.auth='login';
+        ui.err=authMsg(er);ui.booting=false;render();
+      });
+      return;
+    }
+    if(db.members.some(function(m){return m.phone===phone})){ui.err='This phone number is already registered. Please log in.';ui.auth='login';render();return}
+    var m={id:uid(),name:prof.name,location:prof.location,phone:phone,amount:prof.amount,mamount:prof.mamount,pin:pin,created:Date.now(),spins:[],mspins:[],payout:prof.payout};
+    db.members.push(m);db.session={role:'member',memberId:m.id};save();ui.err='';ui.tab='home';render();toast('Welcome, '+m.name.split(' ')[0]+'.');
+  }else if(k==='login'){
+    var ph=normPhone(g('phone')),lpin=g('pin');
+    if(CLOUD){fauth.signInWithEmailAndPassword(ph+MEMBER_DOMAIN,lpin).then(function(){ui.err='';ui.tab='home'}).catch(function(er){ui.err=authMsg(er);render()});return}
+    var mb=db.members.filter(function(x){return x.phone===ph&&x.pin===lpin})[0];
+    if(!mb){ui.err='Phone number or PIN is not correct.';render();return}
+    db.session={role:'member',memberId:mb.id};save();ui.err='';ui.tab='home';render();
+  }else if(k==='admin'){
+    if(CLOUD){
+      fauth.signInWithEmailAndPassword(g('email'),g('pw')).then(function(c){
+        return checkAdmin(c.user).then(function(ok){
+          if(!ok){ui.err='This account is not the admin.';fauth.signOut();render()}
+          else{ui.err='';ui.atab='overview'}
+        });
+      }).catch(function(er){ui.err=authMsg(er,true);render()});
+      return;
+    }
+    if(g('pin')!==db.settings.adminPin){ui.err='Wrong admin PIN.';render();return}
+    db.session={role:'admin'};save();ui.err='';ui.atab='overview';render();
+  }else if(k==='payout'){
+    var ac=g('acno').replace(/\s/g,'');
+    if(!/^\d{10}$/.test(ac)){toast('Account number must be 10 digits.');return}
+    if(!g('bank')||!g('acname')){toast('Choose your bank and enter the account name.');return}
+    updMember(me().id,{payout:{bank:g('bank'),number:ac,name:g('acname')}});ui.editAcct=false;render();toast('Payout account saved');
+  }else if(k==='pay'){
+    var pamt=parseInt(($('#p-amt').value||'').replace(/\D/g,''),10)||0;if(pamt<1||pamt>10000000){toast('Enter the amount you sent.');return}
+    var m2=me(),psc=memberSc(m2),popts=[].slice.call(document.querySelectorAll('#p-due option')).map(function(o){return o.value}),p0=popts.indexOf($('#p-due').value),pref=$('#p-ref').value.trim(),parts=[],rem=pamt;
+    inS(psc,function(){var need=amt(m2);for(var qi=Math.max(0,p0);qi<popts.length&&rem>0;qi++){var nd=Math.max(0,need-paidSum(m2.id,popts[qi],false));if(nd<=0)continue;var ch=Math.min(rem,nd);parts.push({due:popts[qi],amount:ch});rem-=ch}});
+    if(rem>0){if(parts.length)parts[parts.length-1].amount+=rem;else parts.push({due:$('#p-due').value,amount:rem})}
+    if(CLOUD){var pbt=fs.batch();parts.forEach(function(x){pbt.set(fs.collection('payments').doc(),{mid:m2.id,sch:psc,amount:x.amount,ref:pref,status:'pending',cat:null,due:x.due,at:ts()})});pbt.commit().catch(function(){toast('Payment not saved. Check your internet and try again.')})}
+    else{var pnow=Date.now();parts.forEach(function(x){db.payments.push({id:uid(),mid:m2.id,sch:psc,amount:x.amount,ref:pref,status:'pending',cat:null,due:x.due,at:pnow})});save()}
+    ui.tab='history';render();toast(parts.length>1?'Payment recorded for '+parts.length+' contributions. The admin will confirm it.':'Payment recorded. The admin will confirm it.');
+  }else if(k==='send'){
+    var txt=($('#msg').value||'').trim();if(!txt)return;postMsg(txt,'');
+    setTimeout(function(){var i=$('#msg');if(i)i.focus()},0);
+  }else if(k==='notice'){
+    var nt=($('#n-text').value||'').trim(),ntl=($('#n-title').value||'').trim();if(!nt)return;
+    var nobj={title:ntl,text:nt};
+    if(CLOUD){nobj.at=ts();fs.collection('notices').add(nobj).then(function(){toast('Notice posted')},function(){toast('Could not post. Check your internet.')});$('#n-text').value='';$('#n-title').value=''}
+    else{nobj.id=uid();nobj.at=Date.now();db.notices.push(nobj);save();render();toast('Notice posted')}
+  }else if(k==='join'){
+    var jsc=f.dataset.sch==='m'?'m':'d',jam=Number($('#j-amt').value),mm0=me();if(!mm0||!jam)return;
+    updMember(mm0.id,jsc==='m'?{mamount:jam,mjoined:Date.now(),mspins:[]}:{amount:jam,djoined:Date.now(),spins:[]});
+    ui.sc=jsc;toast('You have joined the '+schName(jsc)+' contribution.');if(!CLOUD)render();
+  }else if(k==='paidout'){
+    var pk=($('#po-pick').value||'').split('|'),prow=payoutRows().filter(function(r){return r.m.id===pk[0]&&String(r.pos)===pk[1]&&r.sc===pk[2]})[0];
+    var pv=parseInt(($('#po-amt').value||'').replace(/\D/g,''),10)||0;
+    if(!prow||pv<1){toast('Enter the amount you paid.');return}
+    if(pv>prow.left){toast('That is more than the balance ('+naira(prow.left)+').');return}
+    if(prow.hold&&!ui.holdOk){ui.holdOk=true;toast(prow.m.name+' has red, so payout is on hold. Press Record payout again to pay anyway.');return}
+    ui.holdOk=false;ui.payPick='';
+    var po0={mid:prow.m.id,sch:prow.sc,pos:prow.pos,amount:pv,note:($('#po-note').value||'').trim()};
+    if(CLOUD){po0.at=ts();fs.collection('payouts').add(po0).then(function(){toast('Payout recorded')},function(){toast('Could not save. Check your internet.')})}
+    else{po0.id=uid();po0.at=Date.now();db.payouts.push(po0);save();render();toast('Payout recorded')}
+  }else if(k==='payouts'){
+    var psc=curAdminSc(),pres=inS(psc,function(){var po2={},bad=0;for(var q=1;q<=SS().slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp||1}}
+    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return false}SS().payouts=po2;return true});if(pres){pushSettings();render();toast('Payouts saved')}
+  }else if(k==='adminlogin'){
+    var u0=fauth.currentUser,ne=g('newemail'),np=g('newpw'),np2=g('newpw2');
+    if(!u0)return;
+    if(!ne&&!np){toast('Type a new email, a new password, or both.');return}
+    if(np&&np.length<6){toast('The new password must be at least 6 characters.');return}
+    if(np&&np!==np2){toast('The two new passwords are not the same.');return}
+    if(ne&&ne.toLowerCase()===(u0.email||'').toLowerCase()){toast('That is already your login email.');return}
+    var bt=f.querySelector('button[type=submit]');if(bt)bt.disabled=true;
+    var msgs=[];
+    u0.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u0.email,g('cur'))).then(function(){
+      return np?u0.updatePassword(np).then(function(){msgs.push('Password changed.')}):null;
+    }).then(function(){
+      return ne?u0.verifyBeforeUpdateEmail(ne).then(function(){msgs.push('We sent a link to '+ne+'. Open it to finish changing your login email.')}):null;
+    }).then(function(){
+      f.reset();if(bt)bt.disabled=false;toast(msgs.join(' '));
+    }).catch(function(er){
+      if(bt)bt.disabled=false;var c=(er&&er.code)||'';
+      toast(c==='auth/invalid-credential'||c==='auth/wrong-password'?'Your current password is not correct.':c==='auth/email-already-in-use'?'That email is already used by another account.':c==='auth/invalid-email'?'That email is not valid.':c==='auth/weak-password'?'Choose a stronger password (at least 6 characters).':c==='auth/too-many-requests'?'Too many tries. Wait a few minutes.':c==='auth/requires-recent-login'?'Please log out, log in again, and retry.':'Could not update ('+(c||'unknown')+').');
+    });
+  }else if(k==='settings'){
+    var s=db.settings,slots=Math.max(2,Math.min(100,parseInt($('#s-slots').value,10)||s.slots));
+    var taken=Object.keys(holders()).map(Number),mx=taken.length?Math.max.apply(null,taken):0;
+    if(slots<mx){toast('Some members already hold number '+mx+'. Reset their spins first.');return}
+    var bl=[];$('#s-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=slots&&bl.indexOf(v)<0)bl.push(v)});bl.sort(function(a,b){return a-b});
+    var tkn=holders(),clash=bl.filter(function(v){return tkn[v]});
+    if(clash.length){toast('Number '+clash[0]+' is already taken by a member, so it cannot be blocked.');return}
+    var stv=$('#s-start').value||s.start,rv=Math.max(1,Math.min(200,parseInt($('#s-rounds').value,10)||s.rounds||31));
+    if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}
+    var unitv=parseInt(($('#s-unit').value||'').replace(/\D/g,''),10)||s.unitPayout||150000;
+    var pr=parsePlans($('#s-plans').value),mpr=parsePlans($('#sm-plans').value);if(pr.err||mpr.err){toast(pr.err||mpr.err);return}
+    var M=s.m,mon=!!$('#sm-on').checked,mst=$('#sm-start').value||M.start,mr=Math.max(1,Math.min(200,parseInt($('#sm-rounds').value,10)||M.rounds||12)),msl=Math.max(2,Math.min(100,parseInt($('#sm-slots').value,10)||M.slots||12)),mu=parseInt(($('#sm-unit').value||'').replace(/\D/g,''),10)||M.unitPayout||150000;
+    if(!validMonthly(mst)){toast('The monthly start date must be the 30th of a month (the last day in February).');return}
+    var mbl=[];$('#sm-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=msl&&mbl.indexOf(v)<0)mbl.push(v)});mbl.sort(function(a,b){return a-b});
+    var mchk=inS('m',function(){var h2=holders(),ks=Object.keys(h2).map(Number),mx2=ks.length?Math.max.apply(null,ks):0;if(msl<mx2)return 'Some members already hold monthly number '+mx2+'. Reset their spins first.';var c=mbl.filter(function(v){return h2[v]})[0];if(c)return 'Monthly number '+c+' is already taken, so it cannot be blocked.';return ''});
+    if(mchk){toast(mchk);return}
+    M.plans=mpr.plans;M.on=mon;if(mon)M.used=true;M.start=mst;M.rounds=mr;M.slots=msl;M.blocked=mbl;M.unitPayout=mu;
+    var gp=parseInt($('#s-gap').value,10);s.payGap=isNaN(gp)?5:Math.max(0,Math.min(20,gp));var pd=parseInt($('#sm-payday').value,10);M.payDay=(pd>=1&&pd<=28)?pd:2;
+    s.blocked=bl;s.plans=pr.plans;
+    s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=stv;s.rounds=rv;s.end=endKey();s.unitPayout=unitv;
+    if(!CLOUD)s.adminPin=$('#s-pin').value.trim()||s.adminPin;
+    pushSettings();render();toast('Settings saved');
+  }
+});
+window.addEventListener('storage',function(e){if(!CLOUD&&e.key===KEY&&!ui.recording&&!ui.spinning&&document.activeElement.tagName!=='INPUT'){db=load();render()}});
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawWheel);
+function checkHash(){
+  var adminLink=(location.hash||'').toLowerCase()==='#admin';
+  if(adminLink){if(!db.session)ui.auth='admin'}else if(ui.auth==='admin'&&!isAdmin())ui.auth='login';
+}
+window.addEventListener('hashchange',function(){checkHash();render()});
+checkHash();
+if(CLOUD){
+  startPublic();
+  fauth.onAuthStateChanged(function(u){
+    stopAll(unsubUser);ui.chat=false;ui.thread=null;
+    if(u){
+      checkAdmin(u).then(function(ad){
+        if(!fauth.currentUser||fauth.currentUser.uid!==u.uid)return;
+        ui.booting=false;stopAll(unsubUser);startUser(u,ad);render();
+      });
+      return;
+    }
+    ui.booting=false;db.session=null;db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={};db.mspots={};
+    render();
+  });
+  setTimeout(function(){if(ui.booting){ui.booting=false;render()}},8000);
+}
+render();
+})();
+</script>
+</body></html>
