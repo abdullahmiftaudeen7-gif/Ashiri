@@ -1162,8 +1162,8 @@ document.addEventListener('submit',function(e){
     var bl=[];$('#s-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=slots&&bl.indexOf(v)<0)bl.push(v)});bl.sort(function(a,b){return a-b});
     var tkn=holders(),clash=bl.filter(function(v){return tkn[v]});
     if(clash.length){toast('Number '+clash[0]+' is already taken by a member, so it cannot be blocked.');return}
-    var stv=$('#s-start').value||s.start,rv=Math.max(1,Math.min(200,parseInt($('#s-rounds').value,10)||s.rounds||31));
-    if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}
+    var stv=$('#s-start').value||s.start,env=$('#s-end').value||endKey(),rv=1;
+    if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}if(!validDue(env)){toast('The end date must be a 10th, 20th or 30th.');return}if(env<stv){toast('The end date must be after the start date.');return}rv=Math.max(1,Math.min(200,countRounds('d',stv,env)));
     var unitv=parseInt(($('#s-unit').value||'').replace(/\D/g,''),10)||s.unitPayout||150000;
     var pr=parsePlans($('#s-plans').value),mpr=parsePlans($('#sm-plans').value);if(pr.err||mpr.err){toast(pr.err||mpr.err);return}
     var M=s.m,mon=!!$('#sm-on').checked,mst=$('#sm-start').value||M.start,mr=Math.max(1,Math.min(200,parseInt($('#sm-rounds').value,10)||M.rounds||12)),msl=Math.max(2,Math.min(100,parseInt($('#sm-slots').value,10)||M.slots||12)),mu=parseInt(($('#sm-unit').value||'').replace(/\D/g,''),10)||M.unitPayout||150000;
