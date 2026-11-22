@@ -606,6 +606,8 @@ function spinSwitch(sc){
 function authMsg(er,admin){
   var c=(er&&er.code)||'';
   if(c==='auth/email-already-in-use')return 'This phone number is already registered. Please log in.';
+  if(c==='ajo/exists')return 'This phone number is already registered. Please log in.';
+  if(c==='ajo/oldpin')return 'This phone number was used here before. Please type the same PIN you used the first time, or send a message to the admin.';
   if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'||c==='auth/invalid-email')return admin?'Email or password is not correct.':'Phone number or PIN is not correct.';
   if(c==='auth/too-many-requests')return 'Too many tries. Please wait a few minutes and try again.';
   if(c==='auth/network-request-failed')return 'No internet connection. Please try again.';
@@ -1191,12 +1193,22 @@ document.addEventListener('submit',function(e){
     if(CLOUD){
       var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
       var cu=null;
-      fauth.createUserWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){
-        cu=c.user;
+      fauth.createUserWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){cu=c.user;return c},function(er0){
+        /* A removed member still has a login. If the PIN matches, simply make the profile again so he can re-join. */
+        if(er0&&er0.code==='auth/email-already-in-use'){
+          return fauth.signInWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){
+            return fs.collection('members').doc(c.user.uid).get().then(function(d){
+              if(d.exists)return fauth.signOut().then(function(){throw {code:'ajo/exists'}});
+              return c;
+            });
+          },function(){throw {code:'ajo/oldpin'}});
+        }
+        throw er0;
+      }).then(function(c){
         return fs.collection('members').doc(c.user.uid).set({name:prof.name,location:prof.location,phone:prof.phone,amount:prof.amount,mamount:prof.mamount,created:ts(),spins:[],mspins:[],released:false,payout:prof.payout});
       }).then(function(){ui.err='';ui.tab='home';toast('Welcome, '+prof.name.split(' ')[0]+'.')}).catch(function(er){
         if(cu){cu.delete().catch(function(){});}
-        if(er&&er.code==='auth/email-already-in-use')ui.auth='login';
+        if(er&&(er.code==='auth/email-already-in-use'||er.code==='ajo/exists'))ui.auth='login';
         ui.err=authMsg(er);ui.booting=false;render();
       });
       return;
