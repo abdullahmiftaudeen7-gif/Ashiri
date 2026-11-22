@@ -176,6 +176,7 @@ a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cur
 .bar .pend{background:var(--gold)}
 @keyframes grow{from{width:0}}
 .foot{max-width:680px;margin:24px auto 0;text-align:center;font-size:12px;color:var(--muted)}
+.foot{padding:0 62px}.foot .credit{margin-top:8px;font-size:12.5px;line-height:1.6}.foot .credit a{color:inherit;text-decoration:underline}
 .rchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .rc{min-width:32px;height:32px;padding:0 7px;border-radius:99px;display:inline-grid;place-items:center;font-size:12px;font-weight:800;background:var(--line);color:var(--muted);font-variant-numeric:tabular-nums}
 .rc.g{background:var(--ok);color:#fff}.rc.y{background:#F2C21B;color:#2a2000}.rc.r{background:var(--bad);color:#fff}
@@ -1091,7 +1092,7 @@ function render(){
   else if(db.session&&ui.noProfile)h='<div class="wrap"><div class="card" style="text-align:center;padding:28px 16px;align-items:center"><b>Your account is not on the list</b><p class="muted small">The admin may have removed it. Tap the button below, then register again to join.</p><button class="btn" data-act="rejoin">Register again</button></div></div>';
   else if(db.session)h=loadingView('Loading your account…',true);
   else h=(ui.auth==='admin')?adminLoginView():authView();
-  if(!ui.booting)h+='<footer class="foot">\u00A9 '+(new Date().getFullYear())+' '+esc(db.settings.group)+'. All rights reserved.</footer>';
+  if(!ui.booting)h+='<footer class="foot">\u00A9 '+(new Date().getFullYear())+' '+esc(db.settings.group)+'. All rights reserved.<div class="credit"><b>Created by Alpha Tech Hub</b><br><a href="tel:+2349157775791">+234 915 777 5791</a> \u00B7 <a href="tel:+2349116898040">+234 911 689 8040</a></div></footer>';
   if(!ui.booting&&!isAdmin())h+=noticePopup();
   if(!ui.booting&&isAdmin())h+=adminPayPopup();
   if(ui.cloudErr)h='<div class="banner"><div class="err" role="alert">'+esc(ui.cloudErr)+'</div></div>'+h;
