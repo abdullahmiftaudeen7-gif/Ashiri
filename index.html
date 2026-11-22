@@ -310,6 +310,7 @@ function roundKeys(){
   }
   roundKeys.c={k:key,v:out};return out;
 }
+function countRounds(sc,start,end){var n=0,sp=start.split('-'),y=+sp[0],m=+sp[1],st=keyDn(start),en=keyDn(end),g=0;while(g++<500){var last=new Date(Date.UTC(y,m,0)).getUTCDate(),ds=sc==='m'?[Math.min(30,last)]:[10,20,Math.min(30,last)];for(var i=0;i<ds.length;i++){var dn=keyDn(y+'-'+pad(m)+'-'+pad(ds[i]));if(dn<st)continue;if(dn>en)return n;n++}m++;if(m>12){m=1;y++}}return n}
 function endKey(){var r=roundKeys();return r[r.length-1]||''}
 function roundNo(k){return roundKeys().indexOf(k)+1}
 function keyAtRound(n){return roundKeys()[n-1]||null}
