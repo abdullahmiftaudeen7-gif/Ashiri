@@ -273,10 +273,10 @@ function scOf(x){return x.sch||'d'}
 function schName(sc){return sc==='m'?'Monthly':'10-day'}
 function pfx(){return SC==='m'?'Monthly #':'Contribution #'}
 function rn(k){return (mOn()?(SC==='m'?'Monthly ':'10-day '):'')+'#'+roundNo(k)}
-function collectTxt(){return SC==='m'?'Monthly contribution is collected once a month, on the 30th (the last day in February).':'Contribution is collected every 10 days: the 10th, 20th and 30th.'}
+function collectTxt(){return (SC==='m'?'Monthly contribution is collected once a month, on the 30th (the last day in February).':'Contribution is collected every 10 days: the 10th, 20th and 30th.')+' '+payTxt()}
 function curAdminSc(){return (mOn()&&ui.asc==='m')?'m':'d'}
-function mDefaults(){var p=lp(Date.now()),last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate();return{plans:[],on:false,used:false,start:p.y+'-'+pad(p.m)+'-'+pad(Math.min(30,last)),rounds:12,slots:12,blocked:[],payouts:{},unitPayout:150000,spinOpen:false}}
-function fixM(s){s.m=Object.assign(mDefaults(),s.m||{});if(!validMonthly(s.m.start))s.m.start=mDefaults().start;return s}
+function mDefaults(){var p=lp(Date.now()),last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate();return{plans:[50000,100000,150000,200000,250000,300000,350000,400000,450000,500000].map(function(a){return{pay:a,get:a*10,spins:1}}),on:false,used:false,start:p.y+'-'+pad(p.m)+'-'+pad(Math.min(30,last)),rounds:12,slots:12,blocked:[],payouts:{},unitPayout:150000,spinOpen:false}}
+function fixM(s){s.m=Object.assign(mDefaults(),s.m||{});if(!(s.m.plans&&s.m.plans.length))s.m.plans=mDefaults().plans;if(!validMonthly(s.m.start))s.m.start=mDefaults().start;return s}
 var memStore=null;
 function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r)}catch(e){}return memStore||fresh()}
 var db=CLOUD?fresh():load();
@@ -287,6 +287,18 @@ function lp(t){var s=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',ye
 function dnOf(t){var p=lp(t);return Math.round(Date.UTC(p.y,p.m-1,p.d)/864e5)}
 function keyDn(k){var p=k.split('-');return Math.round(Date.UTC(+p[0],+p[1]-1,+p[2])/864e5)}
 function dueLabel(k){var p=k.split('-');return new Intl.DateTimeFormat('en-NG',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric'}).format(Date.UTC(+p[0],+p[1]-1,+p[2]))}
+function dnKey(dn){var d=new Date(dn*864e5);return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())}
+function ord(n){var x=n%100,a=['th','st','nd','rd'];return n+(a[(x-20)%10]||a[x]||a[0])}
+function payGap(){var g=parseInt(db.settings.payGap,10);return isNaN(g)?5:Math.max(0,Math.min(20,g))}
+function payDayM(){var g=parseInt(db.settings.m&&db.settings.m.payDay,10);return(g>=1&&g<=28)?g:2}
+function payKey(k){if(SC==='m'){var p=k.split('-'),y=+p[0],m=+p[1]+1;if(m>12){m=1;y++}return y+'-'+pad(m)+'-'+pad(payDayM())}var g=payGap(),q=k.split('-'),dd=+q[2];if(dd>=28&&g>0){var y2=+q[0],m2=+q[1]+1;if(m2>12){m2=1;y2++}return y2+'-'+pad(m2)+'-'+pad(Math.min(g,28))}return dnKey(keyDn(k)+g)}
+function payLabel(k){return dueLabel(payKey(k))}
+function payTxt(){
+  if(SC==='m')return 'The admin pays out on the '+ord(payDayM())+' of the month after each collection.';
+  var g=payGap();if(!g)return 'The admin pays out on the same day as each collection.';
+  var l=[10,20,30].map(function(d){var x=d+g;if(x>30)x-=30;return ord(x)});
+  return 'The admin pays out '+g+' days after each collection: the '+l[0]+', '+l[1]+' and '+l[2]+'.';
+}
 function roundKeys(){
   var s=SS(),n=Math.max(1,Math.min(200,+s.rounds||(SC==='m'?12:31))),key=SC+s.start+'|'+n;
   if(roundKeys.c&&roundKeys.c.k===key)return roundKeys.c.v;
@@ -353,7 +365,7 @@ function cycleState(mid,k){
   var ps=db.payments.filter(function(p){return p.mid===mid&&scOf(p)===SC&&p.status!=='rejected'&&payDue(p)===k}).sort(function(a,b){return a.at-b.at});
   var run=0,done=null;
   ps.filter(function(p){return p.status==='confirmed'}).forEach(function(p){run+=p.amount;if(done===null&&run>=need)done=p});
-  if(done){var t=timing(done);return{c:t.c,d:t.d,t:t.t,paid:true}}
+  if(done){var t=timing(done);return{c:t.c,d:t.d,t:(t.c==='green'&&keyDn(k)>dnOf(Date.now()))?'Paid early':t.t,paid:true}}
   var all=ps.reduce(function(t,p){return t+p.amount},0);
   if(all>=need)return{c:'pending',d:'n',t:'Awaiting confirmation',paid:true};
   var late=dnOf(Date.now())-keyDn(k),part=all>0?'Part paid, '+naira(need-all)+' left':'';
@@ -370,25 +382,35 @@ function onHold(m){return !m.released&&joined(m,SC)&&redCycles(m).length>0}
 function onHoldAny(m){return ['d','m'].some(function(sc){return inS(sc,function(){return onHold(m)})})}
 function redLabels(m){var o=[];['d','m'].forEach(function(sc){inS(sc,function(){if(joined(m,sc))redCycles(m).forEach(function(k){o.push(cLabel(k))})})});return o}
 function holdBanner(m){return '<div class="card" style="border-color:var(--bad)"><h3 style="color:var(--bad)">Your ajo receiving is on hold</h3><p class="small">You have red on: '+redLabels(m).join(', ')+'. Please speak to the admin using the message button.</p></div>'}
-function protocolHTML(){
-  return '<div class="card"><h3>Ajo rules</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Contribution is collected every 10 days: the 10th, 20th and 30th.</li>'+(mOn()?'<li>The monthly contribution is collected once a month, on the 30th (last day in February). The same colours apply: paid on the day is green, 1 to 5 days late is yellow, later is red.</li>':'')+'<li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li><li>Your colour is marked automatically as soon as the admin confirms that your money has arrived.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
+function rulesCard(sc){
+  return inS(sc,function(){
+    var ttl=mOn()?(sc==='m'?'Monthly contribution rules':'10-day contribution rules'):'Ajo rules';
+    var first=sc==='m'?'The monthly contribution is collected once a month, on the 30th (the last day in February). '+payTxt():'Contribution is collected every 10 days: the 10th, 20th and 30th. '+payTxt();
+    var col=sc==='m'?'<li>Pay on the 30th (the last day in February) and you are marked <b>green</b>. Pay 1 to 5 days after that and you are marked <b>yellow</b>. Pay more than 5 days late, or not at all, and you are marked <b>red</b>. Red means late.</li>':'<li>Pay on the date and you are marked <b>green</b>. Pay from the 11th to the 15th and you are marked <b>yellow</b>. Pay from the 16th onward, or not at all, and you are marked <b>red</b>. Red means late.</li>';
+    return '<div class="card"><h3>'+ttl+'</h3><ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>'+first+'</li>'+col+'<li>Your colour is marked automatically as soon as the admin confirms that your money has arrived.</li><li><b>If you have any red in your list, your ajo receiving is put on hold, even if you are on number 1.</b></li><li>So everyone should prepare, pay on time, and make sure you have no red.</li></ul></div>';
+  });
 }
 function scheduleCard(m){
-  var cs=cyclesFor(m).slice(-5).reverse();
+  var cs=aheadKeys(m,true).reverse().concat(cyclesFor(m).slice(-5).reverse());
   return '<div class="card"><h3>Collection dates</h3><p class="muted small">'+collectTxt()+'</p><div class="list">'
    +cs.map(function(k){var s=cycleState(m.id,k);return '<div class="item"><div><b>'+pfx()+roundNo(k)+'</b><br><span class="small muted">'+dueLabel(k)+'</span></div><span class="pill '+s.c+'">'+s.t+'</span></div>'}).join('')+'</div>'+legendHTML()+'</div>';
 }
+function aheadKeys(m,withPaidOnly){
+  var base=cyclesFor(m),last=base.length?keyDn(base[base.length-1]):0;
+  var fut=roundKeys().filter(function(k){return keyDn(k)>last&&keyDn(k)>=dnOf(jd(m))});
+  return withPaidOnly?fut.filter(function(k){return paidSum(m.id,k,false)>0}):fut.slice(0,5);
+}
 function focusCycle(m){var cs=cyclesFor(m);if(!cs.length)return null;for(var i=0;i<cs.length;i++){if(paidSum(m.id,cs[i],false)<amt(m))return cs[i]}return cs[cs.length-1]}
 function cycleField(m){
-  var cs=cyclesFor(m).slice(-8),def=focusCycle(m);
-  return '<div class="field"><label for="p-due">Paying for which contribution</label><select id="p-due">'+cs.map(function(k){var pd=paidSum(m.id,k,false);return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+cLabel(k)+(pd>=amt(m)?' (fully paid)':pd>0?' (part paid)':'')+'</option>'}).join('')+'</select></div>';
+  var cs=cyclesFor(m).slice(-8).concat(aheadKeys(m,false)),def=focusCycle(m);
+  return '<div class="field"><label for="p-due">Paying for which contribution</label><select id="p-due">'+cs.map(function(k){var pd=paidSum(m.id,k,false);return '<option value="'+k+'"'+(k===def?' selected':'')+'>'+cLabel(k)+(pd>=amt(m)?' (fully paid)':pd>0?' (part paid)':'')+(keyDn(k)>dnOf(Date.now())&&k!==def&&pd===0&&cyclesFor(m).indexOf(k)<0?' (pay ahead)':'')+'</option>'}).join('')+'</select></div>';
 }
 function payHint(){var mm=me();if(mm)inS(memberSc(mm),payHint0)}
 function payHint0(){
   var a=$('#p-amt'),d=$('#p-due'),h=$('#p-hint'),m=me();if(!a||!d||!h||!m)return;
   var v=parseInt((a.value||'').replace(/\D/g,''),10)||0;if(!v){h.textContent='';return}
   var left=amt(m)-paidSum(m.id,d.value,false)-v;
-  h.textContent=left>0?naira(left)+' will still remain for '+cLabel(d.value)+' after this payment.':left===0?'This completes your '+naira(amt(m))+' for '+cLabel(d.value)+'.':'This is '+naira(-left)+' more than needed for '+cLabel(d.value)+'.';
+  h.textContent=left>0?naira(left)+' will still remain for '+cLabel(d.value)+' after this payment.':left===0?'This completes your '+naira(amt(m))+' for '+cLabel(d.value)+'.':'This pays '+cLabel(d.value)+' and the extra '+naira(-left)+' goes to the next contribution(s).';
   h.style.color=left>0?'var(--bad)':'var(--ok)';
 }
 function unitPay(){return SS().unitPayout||150000}
@@ -412,7 +434,7 @@ function periodCard(m){
   var col=state==='Running'?'var(--ok)':state==='Ended'?'var(--bad)':'var(--warn)';
   var PF=SC==='m'?'Monthly contribution #':'Contribution #',big=state==='Running'?PF+cur+' of '+N:state==='Ended'?'All '+N+' contributions done':'Starts with '+PF+'1';
   var nx=ks[cur];
-  return '<div class="card hc"><span class="label">'+(mOn()?schName(SC)+' · ':'')+'Contribution period · '+state+'</span><b class="hbig">'+big+'</b><span class="small muted">Starts '+dueLabel(ks[0])+' · Ends '+dueLabel(endKey())+' (#'+N+')'+(nx&&state!=='Ended'?' · Next: #'+(cur+1)+' on '+dueLabel(nx):'')+'</span>'+roundsGrid(m||null)+'</div>';
+  return '<div class="card hc"><span class="label">'+(mOn()?schName(SC)+' · ':'')+'Contribution period · '+state+'</span><b class="hbig">'+big+'</b><span class="small muted">Starts '+dueLabel(ks[0])+' · Ends '+dueLabel(endKey())+' (#'+N+')'+(nx&&state!=='Ended'?' · Next: #'+(cur+1)+' on '+dueLabel(nx):'')+'</span><span class="small muted">'+payTxt()+'</span>'+roundsGrid(m||null)+'</div>';
 }
 function progressCard(m){
   var k=focusCycle(m);if(!k)return '';
@@ -438,10 +460,10 @@ function payoutRows(){
   ['d','m'].forEach(function(sc){inS(sc,function(){
     if(sc==='m'&&!mOn())return;
     db.members.forEach(function(m){if(!joined(m,sc))return;mSpins(m).forEach(function(sp){
-      var ent=entOf(sp.pos,m),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),st;
-      if(paid>=ent)st='full';else if(due&&keyDn(due)<=t)st=paid>0?'part':'due';else st=paid>0?'part':'wait';
-      rows.push({m:m,pos:sp.pos,ent:ent,paid:paid,left:Math.max(0,ent-paid),due:due,st:st,sc:sc,hold:onHold(m)})})})})});
-  return rows.sort(function(a,b){return (a.due?keyDn(a.due):1e9)-(b.due?keyDn(b.due):1e9)||a.pos-b.pos});
+      var ent=entOf(sp.pos,m),paid=paidOutFor(m.id,sp.pos),due=keyAtRound(sp.pos),pay=due?payKey(due):null,st;
+      if(paid>=ent)st='full';else if(pay&&keyDn(pay)<=t)st=paid>0?'part':'due';else st=paid>0?'part':'wait';
+      rows.push({m:m,pos:sp.pos,ent:ent,paid:paid,left:Math.max(0,ent-paid),due:due,pay:pay,st:st,sc:sc,hold:onHold(m)})})})})});
+  return rows.sort(function(a,b){return (a.pay?keyDn(a.pay):1e9)-(b.pay?keyDn(b.pay):1e9)||a.pos-b.pos});
 }
 function rowPill(r){return r.st==='full'?'<span class="pill green">Collected in full</span>':r.st==='part'?'<span class="pill yellow">Part paid</span>':r.st==='due'?'<span class="pill pending">Due now</span>':'<span class="pill grey">Not due yet</span>'}
 function barHTML(a,b){var pc=b?Math.min(100,Math.round(a*100/b)):0;return '<div class="bar" role="progressbar" aria-valuenow="'+pc+'" aria-valuemin="0" aria-valuemax="100"><i class="conf" style="width:'+pc+'%"></i></div>'}
@@ -453,7 +475,7 @@ function myPayoutCard(m){
   var h='<div class="card"><h3>Your payout</h3>';
   if(!rows.length)h+='<p class="muted small">Spin for your number to see when you collect.</p>';
   rows.forEach(function(r){
-    h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>Number '+r.pos+'</b>'+rowPill(r)+'</div><span class="small muted">'+(r.due?'Collects on '+pfx()+r.pos+' · '+dueLabel(r.due):'This number is after the last contribution')+'</span>'+barHTML(r.paid,r.ent)
+    h+='<div style="display:flex;flex-direction:column;gap:6px"><div class="row"><b>Number '+r.pos+'</b>'+rowPill(r)+'</div><span class="small muted">'+(r.due?pfx()+r.pos+' is collected on '+dueLabel(r.due)+'. You are paid on <b>'+dueLabel(r.pay)+'</b>.':'This number is after the last contribution')+'</span>'+barHTML(r.paid,r.ent)
      +'<span class="small">'+(r.st==='full'?'<b style="color:var(--ok)">You have collected '+naira(r.ent)+' in full.</b>':'Collected <b>'+naira(r.paid)+'</b> of '+naira(r.ent)+' · <b>'+naira(r.left)+'</b> left')+'</span></div>';
   });
   if(onHold(m))h+='<p class="small" style="color:var(--bad)">Your payout is on hold because of red. Speak to the admin.</p>';
@@ -463,11 +485,11 @@ function myPayoutCard(m){
 function adminPayPopup(){
   if(ui.adminPopSeen||!isAdmin())return '';
   var t=dnOf(Date.now()),ks=roundKeys(),rows=payoutRows().filter(function(r){return r.left>0&&r.due});
-  var due=rows.filter(function(r){return keyDn(r.due)<=t});
-  var nk={d:inS('d',function(){return roundKeys().filter(function(k){return keyDn(k)>t})[0]}),m:inS('m',function(){return roundKeys().filter(function(k){return keyDn(k)>t})[0]})},next=rows.filter(function(r){return r.due&&r.due===nk[r.sc]});
+  var due=rows.filter(function(r){return keyDn(r.pay)<=t});
+  var nk={d:inS('d',function(){return roundKeys().map(payKey).filter(function(k){return keyDn(k)>t})[0]}),m:inS('m',function(){return roundKeys().map(payKey).filter(function(k){return keyDn(k)>t})[0]})},next=rows.filter(function(r){return r.pay&&r.pay===nk[r.sc]});
   if(!due.length&&!next.length)return '';
   function line(r){var b=r.m.payout?esc(r.m.payout.bank)+' · '+esc(r.m.payout.number)+' · '+esc(r.m.payout.name):'No bank account added';
-    return '<div class="item"><div><b>'+esc(r.m.name)+'</b> · Number '+r.pos+(mOn()?' · '+schName(r.sc):'')+(r.hold?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+b+'</span></div><div style="text-align:right"><div class="amt">'+naira(r.left)+'</div><span class="small muted">'+dueLabel(r.due)+'</span></div></div>'}
+    return '<div class="item"><div><b>'+esc(r.m.name)+'</b> · Number '+r.pos+(mOn()?' · '+schName(r.sc):'')+(r.hold?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+b+'</span></div><div style="text-align:right"><div class="amt">'+naira(r.left)+'</div><span class="small muted">Pay on '+dueLabel(r.pay)+'</span></div></div>'}
   var h='<div class="modal" role="dialog" aria-modal="true" aria-label="Payouts to make"><div class="box"><h2>Payouts to make</h2>';
   if(due.length)h+='<h3>Due now</h3><div class="list">'+due.map(line).join('')+'</div>';
   if(next.length)h+='<h3>Coming next</h3><div class="list">'+next.map(line).join('')+'</div>';
@@ -491,7 +513,7 @@ function paidOutTab(){
    +'<div class="field"><label for="po-amt">Amount paid (₦)</label><input id="po-amt" inputmode="numeric" required></div><div class="field"><label for="po-note">Note (optional)</label><input id="po-note" maxlength="80" placeholder="Example: sent by transfer"></div><button class="btn" type="submit">Record payout</button>':'<p class="empty">No spun numbers waiting to be paid.</p>')+'</form>';
   h+='<div class="card"><h2>Who collects</h2>'+(rows.length?'<div class="list">'+rows.map(function(r){
     var b=r.m.payout?esc(r.m.payout.bank)+' · '+esc(r.m.payout.number)+' · '+esc(r.m.payout.name):'No bank account added';
-    return '<div class="item"><div style="flex:1;min-width:0"><b>'+esc(r.m.name)+'</b> · '+(mOn()?schName(r.sc)+' · ':'')+'Number '+r.pos+(r.hold?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+(r.due?(r.sc==='m'?'Monthly #':'Contribution #')+r.pos+' · '+dueLabel(r.due):'After the last contribution')+'<br>'+b+'</span>'+barHTML(r.paid,r.ent)+'<span class="small">'+naira(r.paid)+' of '+naira(r.ent)+(r.left?' · '+naira(r.left)+' left':'')+'</span>'
+    return '<div class="item"><div style="flex:1;min-width:0"><b>'+esc(r.m.name)+'</b> · '+(mOn()?schName(r.sc)+' · ':'')+'Number '+r.pos+(r.hold?' <span class="pill red">On hold</span>':'')+'<br><span class="small muted">'+(r.due?(r.sc==='m'?'Monthly #':'Contribution #')+r.pos+' · '+dueLabel(r.due)+' · Pay on '+dueLabel(r.pay):'After the last contribution')+'<br>'+b+'</span>'+barHTML(r.paid,r.ent)+'<span class="small">'+naira(r.paid)+' of '+naira(r.ent)+(r.left?' · '+naira(r.left)+' left':'')+'</span>'
      +(r.left?'<div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn ghost sm" data-act="payfill" data-v="'+r.m.id+'|'+r.pos+'|'+r.sc+'">Record payment</button></div>':'')+'</div><div>'+rowPill(r)+'</div></div>'}).join('')+'</div>':'<p class="empty">Nobody has spun a number yet.</p>')+'</div>';
   var hist=(db.payouts||[]).slice().sort(function(a,b){return b.at-a.at});
   h+='<div class="card"><h3>Payout history</h3>'+(hist.length?'<div class="list">'+hist.map(function(x){var m=memberById(x.mid)||{name:'Removed'};return '<div class="item"><div><b>'+esc(m.name)+'</b> · Number '+x.pos+'<br><span class="small muted">'+fmt(x.at)+(x.note?' · '+esc(x.note):'')+'</span></div><div style="text-align:right"><div class="amt">'+naira(x.amount)+'</div><button class="btn bad sm" data-act="delpayout" data-id="'+x.id+'">Undo</button></div></div>'}).join('')+'</div>':'<p class="empty">No payouts recorded yet.</p>')+'</div>';
@@ -517,7 +539,7 @@ function takenFor(m){var s=takenPositions();mSpins(m).forEach(function(x){s[x.po
 function wheelNumbers(){var ss=SS(),b={};(ss.blocked||[]).forEach(function(x){b[x]=1});var out=[];for(var i=1;i<=ss.slots;i++)if(!b[i])out.push(i);return out}
 function payoutText(pos){var p=(SS().payouts||{})[pos]||{},a=[];if(p.amt)a.push('Receives <b>'+naira(p.amt)+'</b>');if(p.ppl>1)a.push('shared by '+p.ppl+' people');return a.length?a.join(' · '):'<span class="muted">Amount not set yet</span>'}
 function posList(sp){return '<div class="list">'+sp.map(function(x){return '<div class="item"><div><b>Number '+x.pos+'</b><br><span class="small muted">Spun '+fmt(x.at)+'</span>'+((me()&&onHold(me()))?'<br><span class="pill red">Receiving on hold</span>':'')+'</div><div style="text-align:right;max-width:58%" class="small">'+payoutText(x.pos)+'</div></div>'}).join('')+'</div>'}
-function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,cycle:s.cycle,spinOpen:!!s.spinOpen,plans:s.plans||[],m:(function(){var M=s.m||mDefaults();return{on:!!M.on,used:!!(M.used||M.on),start:M.start,rounds:+M.rounds||12,slots:+M.slots||12,blocked:M.blocked||[],payouts:M.payouts||{},unitPayout:+M.unitPayout||150000,spinOpen:!!M.spinOpen,plans:M.plans||[]}})(),v2:1}}
+function pubSettings(){var s=db.settings;return{group:s.group,opayName:s.opayName,opayNumber:s.opayNumber,slots:s.slots,blocked:s.blocked||[],payouts:s.payouts||{},start:s.start,end:endKey(),rounds:+s.rounds||31,unitPayout:s.unitPayout||150000,payGap:payGap(),cycle:s.cycle,spinOpen:!!s.spinOpen,plans:s.plans||[],m:(function(){var M=s.m||mDefaults();return{on:!!M.on,used:!!(M.used||M.on),start:M.start,rounds:+M.rounds||12,slots:+M.slots||12,blocked:M.blocked||[],payouts:M.payouts||{},unitPayout:+M.unitPayout||150000,payDay:(+M.payDay>=1&&+M.payDay<=28)?+M.payDay:2,spinOpen:!!M.spinOpen,plans:M.plans||[]}})(),v2:1}}
 function pushSettings(){if(!CLOUD){save();return Promise.resolve()}return fs.doc('settings/main').set(pubSettings()).catch(function(){toast('Could not save. Check your internet.')})}
 function updMember(id,patch){
   if(CLOUD){fs.collection('members').doc(id).update(patch).catch(function(){toast('Could not save. Check your internet.')});return}
@@ -609,7 +631,7 @@ function regAmounts(){
 function authView(){
   var s=db.settings;
   var h='<div class="wrap"><div class="top"><div class="brand"><span class="mark">'+ICON.logo+'</span><b>'+brandName(s.group)+'</b></div></div>';
-  h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th.</p></div>';
+  h+='<div class="hero"><h1>Save together. Collect in your turn.</h1><p class="muted">Join the ajo, choose your contribution amount, spin to find your payout position, and pay by transfer to our Opay account on the 10th, 20th and 30th. '+inS('d',payTxt)+(mOpen()?' Monthly contribution: '+inS('m',payTxt):'')+'</p></div>';
   h+=installCard();h+=noticeBoard();h+=inS('d',function(){return periodCard()+receiveCard()})+(mOpen()?inS('m',function(){return periodCard()+receiveCard()}):'');
   h+='<div class="seg"><button data-act="auth" data-v="register" class="'+(ui.auth==='register'?'on':'')+'">Register</button><button data-act="auth" data-v="login" class="'+(ui.auth==='login'?'on':'')+'">Log in</button></div>';
   if(ui.err)h+='<div class="err" role="alert">'+esc(ui.err)+'</div>';
@@ -626,7 +648,7 @@ function authView(){
      +'<div class="field"><label for="l-pin">6-digit PIN</label><input id="l-pin" name="pin" type="password" inputmode="numeric" maxlength="6" required autocomplete="current-password"></div>'
      +'<button class="btn" type="submit">Log in</button></form>';
   }
-  h+=protocolHTML();
+  h+=rulesCard('d')+(mOpen()?rulesCard('m'):'');
   return h+'</div>';
 }
 function adminLoginCard(){
@@ -657,10 +679,10 @@ function homeView(m){
   var pend=mine.filter(function(p){return p.status==='pending'}).length;
   var h=noticeBoard()+installCard()+periodCard(m)+(onHoldAny(m)?holdBanner(m):'')+'<div class="card hc"><span class="label">'+(mOn()?schName(SC)+' · ':'')+'Your contribution</span><span class="big">'+naira(amt(m))+'</span><span class="muted small">'+esc(SC==='m'?'Once a month':db.settings.cycle)+' · '+esc(m.location)+'</span><span><b>You will receive '+naira(receiveFor(amt(m)))+'</b></span></div>';
   h+='<div class="grid2"><div class="stat"><span class="label">Paid so far</span><b class="big" style="font-size:22px">'+naira(conf)+'</b></div><div class="stat"><span class="label">Awaiting check</span><b class="big" style="font-size:22px">'+pend+'</b></div></div>';
-  h+=progressCard(m);h+=myPayoutCard(m);h+=scheduleCard(m);h+=protocolHTML();
+  h+=progressCard(m);h+=myPayoutCard(m);h+=scheduleCard(m);h+=rulesCard(SC);
   h+=payoutCard(m);
   h+='<div class="card"><h2>Make a payment</h2><p class="muted small">Transfer to this Opay account, then tell us here so the admin can confirm it.</p>'+payBlock(m)
-   +'<form data-form="pay">'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent (₦)</label><input id="p-amt" inputmode="numeric" required value="'+(Math.max(0,amt(m)-paidSum(m.id,focusCycle(m),false))||amt(m))+'"><span id="p-hint" class="small"></span></div>'
+   +'<form data-form="pay"><p class="small muted" style="margin:0 0 10px"><b>You can pay small small before the date.</b> Choose the contribution, type the amount you sent, and pay again until the full amount is complete. If the full amount is complete on or before the date, you are marked green.<br><b>Paying for many contributions at once?</b> Type the total you sent (for example three contributions together). The app shares it over the next contributions, and each one is marked when the admin confirms.</p>'+cycleField(m)+'<div class="field"><label for="p-amt">Amount you sent (₦)</label><input id="p-amt" inputmode="numeric" required value="'+(Math.max(0,amt(m)-paidSum(m.id,focusCycle(m),false))||amt(m))+'"><span id="p-hint" class="small"></span></div>'
    +'<div class="field"><label for="p-ref">Transfer reference (optional)</label><input id="p-ref" placeholder="Last digits of the Opay receipt"></div>'
    +'<button class="btn gold" type="submit">I have paid</button></form></div>';
   var sp0=mSpins(m),left0=spinsLeft(m);
@@ -716,6 +738,7 @@ function chatSheet(m){
 }
 function memberSc(m){var a=joined(m,'d'),b=joined(m,'m');return a&&b?(ui.sc==='m'?'m':'d'):(b?'m':'d')}
 function schSwitch(m){if(!(joined(m,'d')&&joined(m,'m')))return '';var c=memberSc(m);return '<div class="seg"><button data-act="scpick" data-v="d" class="'+(c==='d'?'on':'')+'">10-day</button><button data-act="scpick" data-v="m" class="'+(c==='m'?'on':'')+'">Monthly</button></div>'}
+function membersSwitch(c){if(!mOn())return '';var x=curAdminSc();return '<div class="seg"><button data-act="ascpick" data-v="d" class="'+(x==='d'?'on':'')+'">10-day ('+c.d+')</button><button data-act="ascpick" data-v="m" class="'+(x==='m'?'on':'')+'">Monthly ('+c.m+')</button></div>'}
 function ascSwitch(){if(!mOn())return '';var c=curAdminSc();return '<div class="seg"><button data-act="ascpick" data-v="d" class="'+(c==='d'?'on':'')+'">10-day</button><button data-act="ascpick" data-v="m" class="'+(c==='m'?'on':'')+'">Monthly</button></div>'}
 function joinCard(m){
   var sc=(mOpen()&&!joined(m,'m'))?'m':(!joined(m,'d')?'d':'');if(!sc)return '';
@@ -743,6 +766,7 @@ function monthlySettingsHTML(){
    +'<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="sm-on" style="width:22px;min-height:22px"'+(M.on?' checked':'')+'><b>Accept new members for the monthly contribution</b></label><p class="small muted">Turning this off only closes new sign-ups. Members who already joined the monthly contribution keep it, and everything for them continues as normal.</p>'
    +'<div class="field"><label for="sm-start">Monthly starts (first collection: the 30th of a month)</label><input id="sm-start" type="date" value="'+esc(M.start)+'"></div>'
    +'<div class="field"><label for="sm-rounds">Total number of monthly contributions</label><input id="sm-rounds" type="number" min="1" max="200" value="'+(+M.rounds||12)+'"></div>'
+   +'<div class="field"><label for="sm-payday">Monthly payout day (of the month after collection)</label><input id="sm-payday" type="number" min="1" max="28" value="'+payDayM()+'"><span class="small muted">2 means: collected on the 30th, paid on the 2nd of the next month. Members see this date.</span></div>'
    +'<div class="field"><label for="sm-slots">Number of positions on the monthly wheel</label><input id="sm-slots" type="number" min="2" max="100" value="'+(+M.slots||12)+'"></div>'
    +'<div class="field"><label for="sm-block">Monthly numbers the wheel must never land on</label><input id="sm-block" value="'+esc((M.blocked||[]).join(', '))+'"></div>'
    +'<div class="field"><label for="sm-unit">Monthly payout for every ₦5,000 contributed (₦)</label><input id="sm-unit" inputmode="numeric" value="'+esc(M.unitPayout||150000)+'"></div>'
@@ -766,15 +790,18 @@ function adminShell(){
     var ps=db.payments.slice().sort(function(a,b){return (a.status==='pending'?0:1)-(b.status==='pending'?0:1)||b.at-a.at});
     h+='<div class="card"><h2>Payments</h2>'+(ps.length?'<div class="list">'+ps.map(function(p){
       var m=memberById(p.mid)||{name:'Removed',phone:''};
+      var sib=p.status==='pending'?db.payments.filter(function(x){return x.status==='pending'&&x.mid===p.mid&&x.at===p.at}):[];
+      var grp=sib.length>1?'<br><span class="small muted">One transfer of <b>'+naira(sib.reduce(function(t,x){return t+x.amount},0))+'</b> shared over '+sib.length+' contributions</span><div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn sm" data-act="confirmgrp" data-id="'+p.id+'">Confirm all '+sib.length+'</button><button class="btn sm bad" data-act="rejectgrp" data-id="'+p.id+'">Reject all</button></div>':'';
       return '<div class="item"><div><b>'+esc(m.name)+'</b><br><span class="small muted">'+esc(m.phone)+' · '+fmt(p.at)+(p.ref?' · Ref '+esc(p.ref):'')+'</span><br>'+tagHTML(p)
-       +(p.status==='pending'?'<div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn sm" data-act="confirm" data-id="'+p.id+'">Confirm</button><button class="btn sm bad" data-act="reject" data-id="'+p.id+'">Reject</button></div>':'')
+       +(p.status==='pending'?'<div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn sm" data-act="confirm" data-id="'+p.id+'">Confirm</button><button class="btn sm bad" data-act="reject" data-id="'+p.id+'">Reject</button></div>':'')+grp
        +'</div><div style="text-align:right"><div class="amt">'+naira(p.amount)+'</div><span class="pill '+p.status+'">'+p.status+'</span></div></div>';
     }).join('')+'</div>':'<p class="empty">No payments yet.</p>')+'</div>';
   }
   if(ui.atab==='members'){
-    h+='<div class="card"><h2>Members</h2>'+(db.members.length?'<div class="list">'+db.members.map(function(m){
-      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHoldAny(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHoldAny(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redLabels(m).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right">'+memberSchemes(m)+'<br><button class="btn ghost sm" data-act="delask" data-id="'+m.id+'" style="margin-top:6px;color:var(--bad)">Remove member</button></div></div>'+(ui.delAsk===m.id?'<div class="notice" style="margin-bottom:8px"><b>Remove '+esc(m.name)+'?</b> Their number(s) become free again. Their payment history stays on record.<div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn bad sm" data-act="delmember" data-id="'+m.id+'">Yes, remove</button><button class="btn ghost sm" data-act="delno">Cancel</button></div></div>':'');
-    }).join('')+'</div>':'<p class="empty">No members yet. Share the link so people can register.</p>')+'</div>';
+    var msc=curAdminSc(),mlist=db.members.filter(function(m){return joined(m,msc)}),mcnt={d:db.members.filter(function(m){return joined(m,'d')}).length,m:mOn()?db.members.filter(function(m){return joined(m,'m')}).length:0};
+    h+=membersSwitch(mcnt)+'<div class="card"><h2>'+(mOn()?schName(msc)+' members':'Members')+' ('+mlist.length+')</h2>'+(mlist.length?'<div class="list">'+mlist.map(function(m){
+      return '<div class="item"><div><b>'+esc(m.name)+'</b>'+(onHoldAny(m)?' <span class="pill red">Payout on hold</span>':'')+'<br><span class="small muted">'+esc(m.phone)+' · '+esc(m.location)+'<br>Pays <b>'+inS(msc,function(){return naira(amt(m))})+'</b> '+(msc==='m'?'every month':'every 10 days')+'<br>Payout: '+(m.payout?esc(m.payout.bank)+' · '+esc(m.payout.number)+' · '+esc(m.payout.name):'not added yet')+'<br>Registered '+fmt(m.created)+'</span>'+((onHoldAny(m)||m.released)?'<div class="row" style="justify-content:flex-start;margin-top:6px"><span class="small muted">'+(m.released?'Hold released by admin':'Red on: '+redLabels(m).join(', '))+'</span><button class="btn ghost sm" data-act="release" data-id="'+m.id+'">'+(m.released?'Put hold back':'Release hold')+'</button></div>':'')+'</div><div style="text-align:right">'+memberSchemes(m)+'<br><button class="btn ghost sm" data-act="delask" data-id="'+m.id+'" style="margin-top:6px;color:var(--bad)">Remove member</button></div></div>'+(ui.delAsk===m.id?'<div class="notice" style="margin-bottom:8px"><b>Remove '+esc(m.name)+'?</b> Their number(s) become free again. Their payment history stays on record.<div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn bad sm" data-act="delmember" data-id="'+m.id+'">Yes, remove</button><button class="btn ghost sm" data-act="delno">Cancel</button></div></div>':'');
+    }).join('')+'</div>':'<p class="empty">No '+(mOn()?schName(msc)+' ':'')+'members yet. Share the link so people can register.</p>')+'</div>';
   }
   if(ui.atab==='messages'){
     if(ui.thread&&memberById(ui.thread)){
@@ -827,6 +854,7 @@ function adminShell(){
      +'<div class="field"><label for="s-cycle">Payout cycle</label><select id="s-cycle">'+['Every 10 days'].map(function(c){return '<option'+(c===s.cycle?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div>'
      +'<div class="field"><label for="s-start">Contribution starts (first collection date: a 10th, 20th or 30th)</label><input id="s-start" type="date" value="'+esc(s.start)+'" required></div>'
      +'<div class="field"><label for="s-rounds">Total number of contributions</label><input id="s-rounds" type="number" min="1" max="200" value="'+(+s.rounds||31)+'" required><span class="small muted">Contribution #1 is the start date, then every 10th, 20th and 30th after it. The last one is #'+(+s.rounds||31)+' on '+dueLabel(endKey())+'.</span></div>'
+     +'<div class="field"><label for="s-gap">Days between each collection and its payout</label><input id="s-gap" type="number" min="0" max="20" value="'+payGap()+'" required><span class="small muted">5 means: collected on the 10th, paid on the 15th. Collected on the 20th, paid on the 25th. Collected on the 30th, paid on the 5th. Members see these dates.</span></div>'
      +'<div class="field"><label for="s-unit">Payout for every \u20A65,000 contributed (\u20A6)</label><input id="s-unit" inputmode="numeric" value="'+esc(s.unitPayout||150000)+'" required><span class="small muted">Members see this: \u20A65,000 receives \u20A6150,000, \u20A610,000 receives \u20A6300,000, and so on.</span></div>'
      +'<div class="field"><label for="s-plans">Contribution plans (optional)</label><textarea id="s-plans" rows="4" placeholder="200000, 2000000, 1">'+esc(plansText(s.plans))+'</textarea><span class="small muted">One plan per line: amount to pay, amount received, number of spins. Example: 200000, 2000000, 1 means pay ₦200,000, receive ₦2,000,000 and spin once. Members then choose only from these plans. Leave empty to use ₦5,000 steps with the payout above.</span></div>'
      +monthlySettingsHTML()
@@ -849,326 +877,4 @@ function drawWheel(){
     var st=-Math.PI/2+i*seg,taken=!!tk[nums[i]];
     c.beginPath();c.moveTo(r,r);c.arc(r,r,r,st,st+seg);c.closePath();c.fillStyle=taken?T:(i%2?B:A);c.fill();
     c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=3;c.stroke();
-    c.save();c.translate(r,r);c.rotate(st+seg/2);c.textAlign='right';c.textBaseline='middle';
-    c.fillStyle=taken?XT:X;c.font='800 '+Math.max(20,Math.min(54,Math.floor(S/(n>12?(n/1.15):9))))+'px "Bricolage Grotesque",system-ui,sans-serif';
-    c.fillText(String(nums[i]),r-24,0);c.restore();
-  }
-}
-function cloudSpin(m,pos){
-  var sc=SC,sref=fs.collection(sc==='m'?'mspots':'spots').doc(String(pos)),mref=fs.collection('members').doc(m.id),setr=fs.doc('settings/main'),at=Date.now(),fld=sc==='m'?'mspins':'spins',afld=sc==='m'?'mamount':'amount';
-  return fs.runTransaction(function(t){
-    return Promise.all([t.get(sref),t.get(mref),t.get(setr)]).then(function(r){
-      var hs=(r[0].exists&&r[0].data().holders)||[],mem=r[1].data()||{},st=r[2].data()||{},ss=sc==='m'?(st.m||{}):st;
-      if(!ss.spinOpen)throw 'closed';
-      var cap=Math.max(1,((ss.payouts||{})[pos]||{}).ppl||1);
-      if(hs.indexOf(m.id)>-1||hs.length>=cap)throw 'taken';
-      var sp=mem[fld]||[];
-      var pl0=(ss.plans||[]).filter(function(x){return x.pay===(mem[afld]||0)})[0];
-      if(sp.length>=(pl0?pl0.spins:Math.max(1,Math.floor((mem[afld]||0)/5000))))throw 'nospin';
-      t.set(sref,{holders:hs.concat([m.id])});
-      var up={};up[fld]=sp.concat([{pos:pos,at:at}]);t.update(mref,up);
-    });
-  }).then(function(){
-    var c=memberById(m.id);if(c&&!(c[fld]||[]).some(function(x){return x.pos===pos}))c[fld]=(c[fld]||[]).concat([{pos:pos,at:at}]);
-    var src=sc==='m'?db.mspots:db.spots,a=src[pos]||[];if(a.indexOf(m.id)<0)src[pos]=a.concat([m.id]);
-  });
-}
-function doSpin(){var m=me();if(m)inS(memberSc(m),doSpin0)}
-function doSpin0(){var sc=SC;
-  var m=me();if(!m||ui.spinning||spinsLeft(m)<1)return;
-  if(!SS().spinOpen){toast('Spinning is not open yet.');return}
-  var nums=wheelNumbers(),tk=takenFor(m),free=nums.filter(function(x){return !tk[x]});
-  if(!free.length){toast('All numbers are taken.');return}
-  var pos=free[rand(free.length)],n=nums.length,seg=360/n,k=nums.indexOf(pos);
-  var jitter=(Math.random()-.5)*seg*.6,theta=360*(5+rand(3))-(k+.5)*seg+jitter;
-  var cv=$('#wheel');ui.spinning=true;var b=$('#spinbtn');if(b)b.disabled=true;
-  cv.style.transition='transform 6s cubic-bezier(.12,.6,.12,1)';
-  requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
-  var commit=CLOUD?cloudSpin(m,pos):Promise.resolve();
-  var wait=new Promise(function(r){setTimeout(r,6200)});
-  Promise.all([commit.then(function(){return null},function(e){console.error(e);return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){inS(sc,function(){
-    var err=r[0];
-    if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':err==='taken'?'That number was just taken. Spin again.':err==='permission-denied'?'Spin blocked by the database rules. Admin: republish the rules.':err==='unavailable'||err==='network-request-failed'?'No internet. Please try again.':'Spin could not be saved ('+err+'). Please try again.');render();return}
-    if(!CLOUD){
-      var cur=memberById(m.id),again=takenFor(cur);
-      if(again[pos]||spinsLeft(cur)<1){ui.spinning=false;toast('That number was just taken. Spin again.');render();return}
-      var sf=sc==='m'?'mspins':'spins';cur[sf]=cur[sf]||[];cur[sf].push({pos:pos,at:Date.now()});save();
-    }
-    ui.spinning=false;render();
-  })});
-}
-/* ---------- messaging ---------- */
-function postMsg(text,audio){
-  var role=isAdmin()?'admin':'member',mid=isAdmin()?ui.thread:(me()&&me().id);
-  if(!mid)return;
-  ui.draft='';
-  if(CLOUD){
-    fs.collection('messages').add({mid:mid,from:role,text:text||'',audio:audio||'',at:ts(),read:false}).catch(function(){toast('Message not sent. Check your internet.')});
-    var mi=$('#msg');if(mi)mi.value='';return;
-  }
-  db.messages.push({id:uid(),mid:mid,from:role,text:text||'',audio:audio||'',at:Date.now(),read:false});
-  if(!save())toast('Storage is full. Voice note may not be kept.');
-  render();
-}
-function blobToMsg(blob){
-  if(blob.size>(CLOUD?600000:1500000)){toast('Voice note is too long. Keep it under about one minute.');return}
-  var fr=new FileReader();fr.onload=function(){postMsg('',fr.result)};fr.readAsDataURL(blob);
-}
-function toggleRec(){
-  if(rec){try{rec.stop()}catch(e){}return}
-  var fallback=function(){toast('Recording is not allowed here. Choose a voice note from your phone instead.');var f=$('#audioFile');if(f)f.click()};
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){fallback();return}
-  navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
-    var mr;try{mr=new MediaRecorder(st,{audioBitsPerSecond:24000})}catch(e){mr=new MediaRecorder(st)}var ch=[];
-    mr.ondataavailable=function(e){if(e.data.size)ch.push(e.data)};
-    mr.onstop=function(){st.getTracks().forEach(function(t){t.stop()});clearTimeout(recTimer);rec=null;ui.recording=false;blobToMsg(new Blob(ch,{type:mr.mimeType||'audio/webm'}))};
-    mr.start();rec=mr;ui.recording=true;recTimer=setTimeout(function(){try{mr.stop()}catch(e){}},60000);render();
-  }).catch(fallback);
-}
-
-/* ---------- render + events ---------- */
-function typing(){var ae=document.activeElement,ap=$('#app');return !!(ae&&ap&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)&&ap.contains(ae))}
-function softRender(){
-  if(ui.spinning||ui.recording||typing()){ui.dirty=true;refreshThread();return}
-  render();
-}
-document.addEventListener('focusout',function(){if(!ui.dirty)return;setTimeout(function(){if(ui.dirty&&!typing()&&!ui.spinning&&!ui.recording)render()},250)});
-function render(){
-  ui.dirty=false;SC='d';
-  var app=$('#app'),h;
-  if(ui.booting)h=loadingView('Loading…');
-  else if(isAdmin())h=adminShell();
-  else if(me())h=memberShell(me());
-  else if(db.session)h=loadingView('Loading your account…',true);
-  else h=(ui.auth==='admin')?adminLoginView():authView();
-  if(!ui.booting)h+='<footer class="foot">\u00A9 '+(new Date().getFullYear())+' '+esc(db.settings.group)+'. All rights reserved.</footer>';
-  if(!ui.booting&&!isAdmin())h+=noticePopup();
-  if(!ui.booting&&isAdmin())h+=adminPayPopup();
-  if(ui.cloudErr)h='<div class="banner"><div class="err" role="alert">'+esc(ui.cloudErr)+'</div></div>'+h;
-  app.innerHTML=h;
-  inS(me()?memberSc(me()):'d',drawWheel);payHint();
-  var th=$('#thread');if(th)th.scrollTop=th.scrollHeight;
-  if(ui.chat&&me()){markRead('member',me().id)}
-  if(isAdmin()&&ui.atab==='messages'&&ui.thread){markRead('admin',ui.thread)}
-}
-function markRead(role,mid){
-  if(CLOUD){
-    db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read&&!ui.rd[m.id]){ui.rd[m.id]=1;fs.collection('messages').doc(m.id).update({read:true}).catch(function(){delete ui.rd[m.id]})}});
-    return;
-  }
-  var ch=false;db.messages.forEach(function(m){if(m.mid===mid&&m.from!==role&&!m.read){m.read=true;ch=true}});
-  if(ch)save();
-}
-document.addEventListener('input',function(e){if(e.target.id==='msg')ui.draft=e.target.value;if(e.target.id==='p-amt')payHint()});
-document.addEventListener('change',function(e){if(e.target.id==='p-due'){var m0=me();if(m0){inS(memberSc(m0),function(){var r0=amt(m0)-paidSum(m0.id,e.target.value,false);$('#p-amt').value=r0>0?r0:amt(m0)})}payHint()}
-  if(e.target.id==='audioFile'&&e.target.files[0]){blobToMsg(e.target.files[0]);e.target.value=''}});
-var deferredInstall=null;
-function isStandalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true}
-function installCard(){
-  if(isStandalone()||ui.noInstall||!/^https?:$/.test(location.protocol))return '';
-  var ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua);
-  var body=deferredInstall?'Install it on your phone and open it like any other app.':ios?'On iPhone: tap the Share button in Safari, then <b>Add to Home Screen</b>.':'Open your browser menu (⋮) and tap <b>Install app</b> or <b>Add to Home screen</b>.';
-  return '<div class="card" style="flex-direction:row;align-items:center;gap:12px;padding:14px"><span class="mark" style="width:46px;height:46px">'+ICON.logo+'</span><div style="flex:1;min-width:0"><b>Get the Ashiri app</b><br><span class="small muted">'+body+'</span></div>'+(deferredInstall?'<button class="btn gold sm" data-act="install">Install</button>':'')+'<button class="btn ghost sm" data-act="noinstall" aria-label="Hide this">✕</button></div>';
-}
-try{ui.noInstall=localStorage.getItem('ashiri_noinst')==='1'}catch(e){}
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstall=e;softRender()});
-window.addEventListener('appinstalled',function(){deferredInstall=null;softRender()});
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js').catch(function(){})}catch(e){}})}
-document.addEventListener('click',function(e){
-  var t=e.target.closest('[data-act]');if(!t)return;
-  if(t.classList.contains('sheet')&&e.target.closest('[data-stop]'))return;
-  var a=t.dataset.act,v=t.dataset.v,id=t.dataset.id;
-  if(a==='auth'){ui.auth=v;ui.err='';if((location.hash||'').toLowerCase()==='#admin'){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}render()}
-  else if(a==='adminlogin'){ui.auth='admin';ui.err='';render()}
-  else if(a==='adminreset'){
-    var em=(($('#a-email')||{}).value||'').trim();
-    if(!em){toast('Type your admin email above first.');return}
-    fauth.sendPasswordResetEmail(em).then(function(){toast('Reset link sent. Check that email inbox.')}).catch(function(er){toast(er&&er.code==='auth/invalid-email'?'That email is not valid.':er&&er.code==='auth/user-not-found'?'No admin account uses that email.':authMsg(er,true))});
-  }
-  else if(a==='logout'){ui.chat=false;ui.adminPopSeen=false;ui.delAsk='';ui.auth=((location.hash||'').toLowerCase()==='#admin')?'admin':'login';ui.err='';ui.thread=null;ui.tab='home';if(CLOUD){fauth.signOut();return}db.session=null;save();render()}
-  else if(a==='tab'){ui.tab=v;render()}
-  else if(a==='atab'){ui.atab=v;ui.thread=null;render()}
-  else if(a==='fillall'){var fa=$('#fill-a').value,fp=$('#fill-p').value;for(var z=1;z<=SSof(curAdminSc()).slots;z++){var ea=$('#po-a-'+z),ep=$('#po-p-'+z);if(ea&&fa)ea.value=fa.replace(/\D/g,'');if(ep&&fp)ep.value=fp.replace(/\D/g,'')}}
-  else if(a==='release'){var rm=memberById(id);if(rm){updMember(rm.id,{released:!rm.released});render()}}
-  else if(a==='payfill'){ui.payPick=v;ui.holdOk=false;render();var pa=$('#po-amt');if(pa)pa.focus()}
-  else if(a==='delpayout'){if(CLOUD){fs.collection('payouts').doc(id).delete().catch(function(){toast('Could not undo.')})}else{db.payouts=db.payouts.filter(function(x){return x.id!==id});save();render()}toast('Payout removed')}
-  else if(a==='adminpop'){ui.adminPopSeen=true;render()}
-  else if(a==='adminpopgo'){ui.adminPopSeen=true;ui.atab='paidout';render()}
-  else if(a==='delask'){ui.delAsk=id;render()}
-  else if(a==='delno'){ui.delAsk='';render()}
-  else if(a==='delmember'){ui.delAsk='';removeMember(id)}
-  else if(a==='seen'){markSeen(Number(id));render()}
-  else if(a==='togglespin'){var tso=SSof(v==='m'?'m':'d');tso.spinOpen=!tso.spinOpen;pushSettings();render();toast(tso.spinOpen?'Spinning is now open':'Spinning is now closed')}
-  else if(a==='delnotice'){delNotice(id)}
-  else if(a==='editacct'){ui.editAcct=!ui.editAcct;render()}
-  else if(a==='spin'){doSpin()}
-  else if(a==='install'){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;softRender()},function(){})}}
-  else if(a==='noinstall'){ui.noInstall=true;try{localStorage.setItem('ashiri_noinst','1')}catch(x){}render()}
-  else if(a==='scpick'){ui.sc=v;render()}
-  else if(a==='ascpick'){ui.asc=v;render()}
-  else if(a==='openchat'){ui.chat=true;render()}
-  else if(a==='closechat'){ui.chat=false;render()}
-  else if(a==='openthread'){ui.thread=id;render()}
-  else if(a==='closethread'){ui.thread=null;render()}
-  else if(a==='mic'){toggleRec()}
-  else if(a==='copy'){var n=db.settings.opayNumber;
-    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(n):Promise.reject()).then(function(){toast('Account number copied')},function(){var el=$('#acctnum');if(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Number selected. Press and hold to copy.')})}
-  else if(a==='confirm'||a==='reject'){var p=db.payments.filter(function(x){return x.id===id})[0];if(p){var stt=a==='confirm'?'confirmed':'rejected';if(CLOUD){fs.collection('payments').doc(id).update({status:stt,cat:ts()}).catch(function(){toast('Could not update. Check your internet.')});return}p.status=stt;p.cat=Date.now();save();render()}}
-  else if(a==='resetspin'){var mm=memberById(id);if(mm){var rsc=v==='m'?'m':'d',fld=rsc==='m'?'mspins':'spins',col=rsc==='m'?'mspots':'spots';
-    if(CLOUD){var bt=fs.batch();inS(rsc,function(){mSpins(mm).forEach(function(x){bt.update(fs.collection(col).doc(String(x.pos)),{holders:firebase.firestore.FieldValue.arrayRemove(mm.id)})})});var rpatch={};rpatch[fld]=[];bt.update(fs.collection('members').doc(mm.id),rpatch);bt.commit().then(function(){toast('Spins reset for '+mm.name)},function(){toast('Could not reset. Check your internet.')});return}
-    mm[fld]=[];save();render();toast('Spins reset for '+mm.name)}}
-});
-document.addEventListener('submit',function(e){
-  var f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();
-  var k=f.dataset.form,g=function(n){var el=f.elements[n];return el?el.value.trim():''};
-  if(k==='register'){
-    var phone=normPhone(g('phone')),pin=g('pin');
-    if(!validPhone(phone)){ui.err='Enter a valid Nigerian phone number, like 08012345678.';render();return}
-    if(!/^\d{6}$/.test(pin)){ui.err='PIN must be exactly 6 digits.';render();return}
-    var acno=g('acno').replace(/\s/g,'');
-    if(!/^\d{10}$/.test(acno)){ui.err='Account number must be 10 digits.';render();return}
-    if(!g('bank')||!g('acname')){ui.err='Choose your bank and enter the account name.';render();return}
-    var prof={name:g('name'),location:g('loc'),phone:phone,amount:0,mamount:0,payout:{bank:g('bank'),number:acno,name:g('acname')}};
-    var jdE=f.elements['jd'],jmE=f.elements['jm'],wantD=!jdE||jdE.checked,wantM=!!(jmE&&jmE.checked);
-    if(!wantD&&!wantM){ui.err='Choose at least one contribution to join.';render();return}
-    prof.amount=wantD?Number(g('amt')):0;prof.mamount=wantM?Number(g('mamt')):0;
-    if(CLOUD){
-      var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
-      var cu=null;
-      fauth.createUserWithEmailAndPassword(phone+MEMBER_DOMAIN,pin).then(function(c){
-        cu=c.user;
-        return fs.collection('members').doc(c.user.uid).set({name:prof.name,location:prof.location,phone:prof.phone,amount:prof.amount,mamount:prof.mamount,created:ts(),spins:[],mspins:[],released:false,payout:prof.payout});
-      }).then(function(){ui.err='';ui.tab='home';toast('Welcome, '+prof.name.split(' ')[0]+'.')}).catch(function(er){
-        if(cu){cu.delete().catch(function(){});}
-        if(er&&er.code==='auth/email-already-in-use')ui.auth='login';
-        ui.err=authMsg(er);ui.booting=false;render();
-      });
-      return;
-    }
-    if(db.members.some(function(m){return m.phone===phone})){ui.err='This phone number is already registered. Please log in.';ui.auth='login';render();return}
-    var m={id:uid(),name:prof.name,location:prof.location,phone:phone,amount:prof.amount,mamount:prof.mamount,pin:pin,created:Date.now(),spins:[],mspins:[],payout:prof.payout};
-    db.members.push(m);db.session={role:'member',memberId:m.id};save();ui.err='';ui.tab='home';render();toast('Welcome, '+m.name.split(' ')[0]+'.');
-  }else if(k==='login'){
-    var ph=normPhone(g('phone')),lpin=g('pin');
-    if(CLOUD){fauth.signInWithEmailAndPassword(ph+MEMBER_DOMAIN,lpin).then(function(){ui.err='';ui.tab='home'}).catch(function(er){ui.err=authMsg(er);render()});return}
-    var mb=db.members.filter(function(x){return x.phone===ph&&x.pin===lpin})[0];
-    if(!mb){ui.err='Phone number or PIN is not correct.';render();return}
-    db.session={role:'member',memberId:mb.id};save();ui.err='';ui.tab='home';render();
-  }else if(k==='admin'){
-    if(CLOUD){
-      fauth.signInWithEmailAndPassword(g('email'),g('pw')).then(function(c){
-        return checkAdmin(c.user).then(function(ok){
-          if(!ok){ui.err='This account is not the admin.';fauth.signOut();render()}
-          else{ui.err='';ui.atab='overview'}
-        });
-      }).catch(function(er){ui.err=authMsg(er,true);render()});
-      return;
-    }
-    if(g('pin')!==db.settings.adminPin){ui.err='Wrong admin PIN.';render();return}
-    db.session={role:'admin'};save();ui.err='';ui.atab='overview';render();
-  }else if(k==='payout'){
-    var ac=g('acno').replace(/\s/g,'');
-    if(!/^\d{10}$/.test(ac)){toast('Account number must be 10 digits.');return}
-    if(!g('bank')||!g('acname')){toast('Choose your bank and enter the account name.');return}
-    updMember(me().id,{payout:{bank:g('bank'),number:ac,name:g('acname')}});ui.editAcct=false;render();toast('Payout account saved');
-  }else if(k==='pay'){
-    var pamt=parseInt(($('#p-amt').value||'').replace(/\D/g,''),10)||0;if(pamt<1||pamt>10000000){toast('Enter the amount you sent.');return}
-    var m2=me(),pd={mid:m2.id,sch:memberSc(m2),amount:pamt,ref:$('#p-ref').value.trim(),status:'pending',cat:null,due:$('#p-due').value};
-    if(CLOUD){pd.at=ts();fs.collection('payments').add(pd).catch(function(){toast('Payment not saved. Check your internet and try again.')})}
-    else{pd.id=uid();pd.at=Date.now();db.payments.push(pd);save()}
-    ui.tab='history';render();toast('Payment recorded. The admin will confirm it.');
-  }else if(k==='send'){
-    var txt=($('#msg').value||'').trim();if(!txt)return;postMsg(txt,'');
-    setTimeout(function(){var i=$('#msg');if(i)i.focus()},0);
-  }else if(k==='notice'){
-    var nt=($('#n-text').value||'').trim(),ntl=($('#n-title').value||'').trim();if(!nt)return;
-    var nobj={title:ntl,text:nt};
-    if(CLOUD){nobj.at=ts();fs.collection('notices').add(nobj).then(function(){toast('Notice posted')},function(){toast('Could not post. Check your internet.')});$('#n-text').value='';$('#n-title').value=''}
-    else{nobj.id=uid();nobj.at=Date.now();db.notices.push(nobj);save();render();toast('Notice posted')}
-  }else if(k==='join'){
-    var jsc=f.dataset.sch==='m'?'m':'d',jam=Number($('#j-amt').value),mm0=me();if(!mm0||!jam)return;
-    updMember(mm0.id,jsc==='m'?{mamount:jam,mjoined:Date.now(),mspins:[]}:{amount:jam,djoined:Date.now(),spins:[]});
-    ui.sc=jsc;toast('You have joined the '+schName(jsc)+' contribution.');if(!CLOUD)render();
-  }else if(k==='paidout'){
-    var pk=($('#po-pick').value||'').split('|'),prow=payoutRows().filter(function(r){return r.m.id===pk[0]&&String(r.pos)===pk[1]&&r.sc===pk[2]})[0];
-    var pv=parseInt(($('#po-amt').value||'').replace(/\D/g,''),10)||0;
-    if(!prow||pv<1){toast('Enter the amount you paid.');return}
-    if(pv>prow.left){toast('That is more than the balance ('+naira(prow.left)+').');return}
-    if(prow.hold&&!ui.holdOk){ui.holdOk=true;toast(prow.m.name+' has red, so payout is on hold. Press Record payout again to pay anyway.');return}
-    ui.holdOk=false;ui.payPick='';
-    var po0={mid:prow.m.id,sch:prow.sc,pos:prow.pos,amount:pv,note:($('#po-note').value||'').trim()};
-    if(CLOUD){po0.at=ts();fs.collection('payouts').add(po0).then(function(){toast('Payout recorded')},function(){toast('Could not save. Check your internet.')})}
-    else{po0.id=uid();po0.at=Date.now();db.payouts.push(po0);save();render();toast('Payout recorded')}
-  }else if(k==='payouts'){
-    var psc=curAdminSc(),pres=inS(psc,function(){var po2={},bad=0;for(var q=1;q<=SS().slots;q++){var am=parseInt(($('#po-a-'+q).value||'').replace(/\D/g,''),10)||0,pp=parseInt(($('#po-p-'+q).value||'').replace(/\D/g,''),10)||0;var hh=holders()[q];if(hh&&hh.length>(pp||1)){bad=q;break}if(am||pp)po2[q]={amt:am,ppl:pp||1}}
-    if(bad){toast('Number '+bad+' already has '+holders()[bad].length+' people on it, so it cannot be shared by fewer.');return false}SS().payouts=po2;return true});if(pres){pushSettings();render();toast('Payouts saved')}
-  }else if(k==='adminlogin'){
-    var u0=fauth.currentUser,ne=g('newemail'),np=g('newpw'),np2=g('newpw2');
-    if(!u0)return;
-    if(!ne&&!np){toast('Type a new email, a new password, or both.');return}
-    if(np&&np.length<6){toast('The new password must be at least 6 characters.');return}
-    if(np&&np!==np2){toast('The two new passwords are not the same.');return}
-    if(ne&&ne.toLowerCase()===(u0.email||'').toLowerCase()){toast('That is already your login email.');return}
-    var bt=f.querySelector('button[type=submit]');if(bt)bt.disabled=true;
-    var msgs=[];
-    u0.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u0.email,g('cur'))).then(function(){
-      return np?u0.updatePassword(np).then(function(){msgs.push('Password changed.')}):null;
-    }).then(function(){
-      return ne?u0.verifyBeforeUpdateEmail(ne).then(function(){msgs.push('We sent a link to '+ne+'. Open it to finish changing your login email.')}):null;
-    }).then(function(){
-      f.reset();if(bt)bt.disabled=false;toast(msgs.join(' '));
-    }).catch(function(er){
-      if(bt)bt.disabled=false;var c=(er&&er.code)||'';
-      toast(c==='auth/invalid-credential'||c==='auth/wrong-password'?'Your current password is not correct.':c==='auth/email-already-in-use'?'That email is already used by another account.':c==='auth/invalid-email'?'That email is not valid.':c==='auth/weak-password'?'Choose a stronger password (at least 6 characters).':c==='auth/too-many-requests'?'Too many tries. Wait a few minutes.':c==='auth/requires-recent-login'?'Please log out, log in again, and retry.':'Could not update ('+(c||'unknown')+').');
-    });
-  }else if(k==='settings'){
-    var s=db.settings,slots=Math.max(2,Math.min(100,parseInt($('#s-slots').value,10)||s.slots));
-    var taken=Object.keys(holders()).map(Number),mx=taken.length?Math.max.apply(null,taken):0;
-    if(slots<mx){toast('Some members already hold number '+mx+'. Reset their spins first.');return}
-    var bl=[];$('#s-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=slots&&bl.indexOf(v)<0)bl.push(v)});bl.sort(function(a,b){return a-b});
-    var tkn=holders(),clash=bl.filter(function(v){return tkn[v]});
-    if(clash.length){toast('Number '+clash[0]+' is already taken by a member, so it cannot be blocked.');return}
-    var stv=$('#s-start').value||s.start,rv=Math.max(1,Math.min(200,parseInt($('#s-rounds').value,10)||s.rounds||31));
-    if(!validDue(stv)){toast('The start date must be a 10th, 20th or 30th.');return}
-    var unitv=parseInt(($('#s-unit').value||'').replace(/\D/g,''),10)||s.unitPayout||150000;
-    var pr=parsePlans($('#s-plans').value),mpr=parsePlans($('#sm-plans').value);if(pr.err||mpr.err){toast(pr.err||mpr.err);return}
-    var M=s.m,mon=!!$('#sm-on').checked,mst=$('#sm-start').value||M.start,mr=Math.max(1,Math.min(200,parseInt($('#sm-rounds').value,10)||M.rounds||12)),msl=Math.max(2,Math.min(100,parseInt($('#sm-slots').value,10)||M.slots||12)),mu=parseInt(($('#sm-unit').value||'').replace(/\D/g,''),10)||M.unitPayout||150000;
-    if(!validMonthly(mst)){toast('The monthly start date must be the 30th of a month (the last day in February).');return}
-    var mbl=[];$('#sm-block').value.split(/[^0-9]+/).forEach(function(x){var v=parseInt(x,10);if(v>=1&&v<=msl&&mbl.indexOf(v)<0)mbl.push(v)});mbl.sort(function(a,b){return a-b});
-    var mchk=inS('m',function(){var h2=holders(),ks=Object.keys(h2).map(Number),mx2=ks.length?Math.max.apply(null,ks):0;if(msl<mx2)return 'Some members already hold monthly number '+mx2+'. Reset their spins first.';var c=mbl.filter(function(v){return h2[v]})[0];if(c)return 'Monthly number '+c+' is already taken, so it cannot be blocked.';return ''});
-    if(mchk){toast(mchk);return}
-    M.plans=mpr.plans;M.on=mon;if(mon)M.used=true;M.start=mst;M.rounds=mr;M.slots=msl;M.blocked=mbl;M.unitPayout=mu;
-    s.blocked=bl;s.plans=pr.plans;
-    s.group=$('#s-group').value.trim();s.opayName=$('#s-on').value.trim();s.opayNumber=$('#s-num').value.trim();s.slots=slots;s.cycle=$('#s-cycle').value;s.start=stv;s.rounds=rv;s.end=endKey();s.unitPayout=unitv;
-    if(!CLOUD)s.adminPin=$('#s-pin').value.trim()||s.adminPin;
-    pushSettings();render();toast('Settings saved');
-  }
-});
-window.addEventListener('storage',function(e){if(!CLOUD&&e.key===KEY&&!ui.recording&&!ui.spinning&&document.activeElement.tagName!=='INPUT'){db=load();render()}});
-if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawWheel);
-function checkHash(){
-  var adminLink=(location.hash||'').toLowerCase()==='#admin';
-  if(adminLink){if(!db.session)ui.auth='admin'}else if(ui.auth==='admin'&&!isAdmin())ui.auth='login';
-}
-window.addEventListener('hashchange',function(){checkHash();render()});
-checkHash();
-if(CLOUD){
-  startPublic();
-  fauth.onAuthStateChanged(function(u){
-    stopAll(unsubUser);ui.chat=false;ui.thread=null;
-    if(u){
-      checkAdmin(u).then(function(ad){
-        if(!fauth.currentUser||fauth.currentUser.uid!==u.uid)return;
-        ui.booting=false;stopAll(unsubUser);startUser(u,ad);render();
-      });
-      return;
-    }
-    ui.booting=false;db.session=null;db.members=[];db.payments=[];db.messages=[];db.payouts=[];db.spots={};db.mspots={};
-    render();
-  });
-  setTimeout(function(){if(ui.booting){ui.booting=false;render()}},8000);
-}
-render();
-})();
-</script>
-</body></html>
+    c.save();c.translate(r,r);c.rotate(st+seg/2);c.textAlign='right';c.tex
