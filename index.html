@@ -646,7 +646,8 @@ function startUser(u,admin){
     listen(C('messages'),function(q){db.messages=q.docs.map(normDoc)});
     listen(C('payouts'),function(q){db.payouts=q.docs.map(normDoc)});
   }else{
-    listen(C('members').doc(u.uid),function(d){db.members=d.exists?[normDoc(d)]:[]});
+    ui.noProfile=false;if(ui.npT){clearTimeout(ui.npT);ui.npT=0}
+    listen(C('members').doc(u.uid),function(d){db.members=d.exists?[normDoc(d)]:[];if(d.exists){if(ui.npT){clearTimeout(ui.npT);ui.npT=0}ui.noProfile=false}else if(!ui.npT&&!ui.noProfile){ui.npT=setTimeout(function(){ui.noProfile=true;ui.npT=0;render()},3000)}});
     listen(C('payments').where('mid','==',u.uid),function(q){db.payments=q.docs.map(normDoc)});
     listen(C('messages').where('mid','==',u.uid),function(q){db.messages=q.docs.map(normDoc)});
     listen(C('payouts').where('mid','==',u.uid),function(q){db.payouts=q.docs.map(normDoc)});
@@ -1087,6 +1088,7 @@ function render(){
   if(ui.booting)h=loadingView('Loading…');
   else if(isAdmin())h=adminShell();
   else if(me())h=memberShell(me());
+  else if(db.session&&ui.noProfile)h='<div class="wrap"><div class="card" style="text-align:center;padding:28px 16px;align-items:center"><b>Your account is not on the list</b><p class="muted small">The admin may have removed it. Tap the button below, then register again to join.</p><button class="btn" data-act="rejoin">Register again</button></div></div>';
   else if(db.session)h=loadingView('Loading your account…',true);
   else h=(ui.auth==='admin')?adminLoginView():authView();
   if(!ui.booting)h+='<footer class="foot">\u00A9 '+(new Date().getFullYear())+' '+esc(db.settings.group)+'. All rights reserved.</footer>';
@@ -1143,6 +1145,7 @@ document.addEventListener('click',function(e){
   else if(a==='delpayout'){if(CLOUD){fs.collection('payouts').doc(id).delete().catch(function(){toast('Could not undo.')})}else{db.payouts=db.payouts.filter(function(x){return x.id!==id});save();render()}toast('Payout removed')}
   else if(a==='adminpop'){ui.adminPopSeen=true;render()}
   else if(a==='adminpopgo'){ui.adminPopSeen=true;ui.atab='paidout';render()}
+  else if(a==='rejoin'){ui.noProfile=false;ui.chat=false;ui.guide=false;ui.auth='register';ui.err='';if(CLOUD&&fauth){fauth.signOut().then(function(){ui.auth='register';render()},function(){render()})}else render()}
   else if(a==='delask'){ui.delAsk=id;render()}
   else if(a==='delno'){ui.delAsk='';render()}
   else if(a==='delmember'){ui.delAsk='';removeMember(id)}
