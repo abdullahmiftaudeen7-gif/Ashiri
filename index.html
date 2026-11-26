@@ -193,7 +193,8 @@ a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cur
 </style>
 
 </head><body>
-<div id="app"><div style="padding:24px 16px;max-width:640px;margin:0 auto"><h1 style="font-size:26px;margin:0 0 8px">ASHIRI INTERNATIONAL CONTRIBUTION</h1><p style="margin:0">Ajo savings group in Nigeria. Contribute every 10 days or every month and collect your payout on your turn.</p><pre id="dbg" style="margin-top:18px;opacity:.55;font-size:11px;white-space:pre-wrap;word-break:break-all"></pre></div></div>
+<div id="app"><div style="padding:28px 16px;max-width:640px;margin:0 auto;text-align:center"><style>@keyframes ashspin{to{transform:rotate(360deg)}}.ashspin{width:46px;height:46px;margin:22px auto 14px;border:5px solid rgba(255,200,61,.25);border-top-color:#FFC83D;border-radius:50%;animation:ashspin .9s linear infinite}@media (prefers-reduced-motion:reduce){.ashspin{animation-duration:3s}}</style><h1 style="font-size:26px;margin:0 0 8px">ASHIRI INTERNATIONAL CONTRIBUTION</h1><p style="margin:0">Ajo savings group in Nigeria. Contribute every 10 days or every month and collect your payout on your turn.</p><div class="ashspin" role="status" aria-label="Loading"></div><p id="ldmsg" style="margin:0;font-weight:700;font-size:18px">Loading… please wait a moment.</p><p style="margin:8px 0 0;opacity:.75;font-size:14px">The first time can take a few seconds on a slow network.</p><button id="ldbtn" onclick="location.reload()" style="display:none;margin-top:16px;padding:14px 22px;border:0;border-radius:12px;background:#F2B72B;color:#0B3B2A;font:700 16px system-ui;cursor:pointer">Try again</button><noscript><p style="margin-top:16px;font-weight:700">Please turn on JavaScript in your browser to use this site.</p></noscript><pre id="dbg" style="display:none"></pre></div></div>
+<script>(function(){var m=document.getElementById('ldmsg'),b=document.getElementById('ldbtn');if(!m)return;setTimeout(function(){if(document.getElementById('ldmsg'))m.textContent='The network is slow. Please keep waiting…'},6000);setTimeout(function(){if(document.getElementById('ldmsg')){m.textContent='Still loading. Check your internet, then tap Try again.';b.style.display='inline-block'}},18000)})();</script>
 <noscript><p style="padding:16px">Please turn on JavaScript to use the Ashiri International Contribution website.</p></noscript>
 <div id="toast" class="toast" hidden></div>
 
@@ -201,7 +202,7 @@ a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cur
 /* Load Firebase without freezing the page: try Google, then a backup host, then start the app anyway */
 (function(){
   var names=['app','auth','firestore'],hosts=['https://www.gstatic.com/firebasejs/10.12.2/firebase-','https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-'],started=false;
-  var T0=Date.now();function L(t){try{var d=document.getElementById('dbg');if(d)d.textContent+=((Date.now()-T0)/1000).toFixed(1)+'s '+t+'\n'}catch(x){}}L('loader ran; '+navigator.userAgent.slice(0,90));var tries=0;function go(){L('go; main='+(typeof window.__ashiriStart));if(started)return;if(typeof window.__ashiriStart!=='function'&&tries++<400){setTimeout(go,50);return}started=true;try{window.__ashiriStart()}catch(e){var a=document.getElementById('app');if(a){var m=String(e&&e.message||e).replace(/[<>&]/g,'');var st=String(e&&e.stack||'').split('\n').slice(0,3).join(' | ').replace(/[<>&]/g,'');a.innerHTML='<div style="padding:24px 16px;max-width:560px;margin:0 auto"><h2>Something went wrong</h2><p>Tap the button to clean this phone and try again.</p><button id="fixbtn" style="padding:14px 22px;border:0;border-radius:12px;background:#F2B72B;color:#0B3B2A;font:700 16px system-ui">Clean and try again</button><p style="opacity:.6;font-size:12px;word-break:break-all;margin-top:18px">Error: '+m+'<br>'+st+'</p></div>';document.getElementById('fixbtn').onclick=function(){try{localStorage.clear()}catch(x){}try{sessionStorage.clear()}catch(x){}var P=[];try{if(window.caches)P.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(x){}try{if(navigator.serviceWorker)P.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(g){return g.unregister()}))}))}catch(x){}Promise.all(P).then(function(){location.reload()},function(){location.reload()})}}}}
+  var T0=Date.now();function L(t){}var tries=0;function go(){L('go; main='+(typeof window.__ashiriStart));if(started)return;if(typeof window.__ashiriStart!=='function'&&tries++<400){setTimeout(go,50);return}started=true;try{window.__ashiriStart()}catch(e){var a=document.getElementById('app');if(a){a.innerHTML='<div style="padding:24px 16px;max-width:560px;margin:0 auto"><h2>Something went wrong</h2><p>Tap the button to clean this phone and try again.</p><button id="fixbtn" style="padding:14px 22px;border:0;border-radius:12px;background:#F2B72B;color:#0B3B2A;font:700 16px system-ui">Clean and try again</button></div>';document.getElementById('fixbtn').onclick=function(){try{localStorage.clear()}catch(x){}try{sessionStorage.clear()}catch(x){}var P=[];try{if(window.caches)P.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(x){}try{if(navigator.serviceWorker)P.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(g){return g.unregister()}))}))}catch(x){}Promise.all(P).then(function(){location.reload()},function(){location.reload()})}}}}
   setTimeout(go,12000);
   function load(i,h){
     if(i>=names.length)return go();
@@ -214,7 +215,6 @@ a.link{color:var(--brand);font-weight:700;background:none;border:0;padding:0;cur
 })();
 </script>
 <script>
-window.__mainParsed=1;try{var _d=document.getElementById('dbg');if(_d)_d.textContent+='main script parsed\n'}catch(x){}
 window.__ashiriStart=function(){(function(){
 'use strict';
 var KEY='ajo_circle_v1';
@@ -271,7 +271,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function rand(n){var b=new Uint32Array(1);(window.crypto||{getRandomValues:function(x){x[0]=Math.floor(Math.random()*4294967296)}}).getRandomValues(b);return b[0]%n}
 /* ---- Live database (Firebase). Keep FIREBASE_CONFIG as null to run in this-phone-only demo mode. ---- */
 var FIREBASE_CONFIG={"apiKey": "AIzaSyB6OFfywJbIiN8REtOt1h7EySv_PY5I8mk", "authDomain": "ashiri-test.firebaseapp.com", "projectId": "ashiri-test", "storageBucket": "ashiri-test.firebasestorage.app", "messagingSenderId": "545750927088", "appId": "1:545750927088:web:0fe01327c7dc71abff6435"};
-var ADMIN_EMAIL="abdullahmiftaudeen7@gmail.com";
+var ADMIN_EMAIL="";
 var MEMBER_DOMAIN='@ashiri-members.com';
 var CLOUD=false,fauth=null,fs=null,unsubPub=[],unsubUser=[];
 (function(){try{if(FIREBASE_CONFIG&&window.firebase){firebase.initializeApp(FIREBASE_CONFIG);fauth=firebase.auth();fs=firebase.firestore();CLOUD=true}}catch(e){CLOUD=false}})();
@@ -612,12 +612,12 @@ function authMsg(er,admin){
   if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'||c==='auth/invalid-email')return admin?'Email or password is not correct.':'Phone number or PIN is not correct.';
   if(c==='auth/too-many-requests')return 'Too many tries. Please wait a few minutes and try again.';
   if(c==='auth/network-request-failed')return 'No internet connection. Please try again.';
-  if(c==='permission-denied')return 'The database rules are not published yet. Please tell the admin.';
-  return 'Something went wrong ('+(c||'unknown')+'). Please try again.';
+  if(c==='permission-denied')return 'This is not available right now. Please try again later.';
+  return 'Something went wrong. Please try again.';
 }
 function normDoc(d){var o=d.data({serverTimestamps:'estimate'})||{};Object.keys(o).forEach(function(k){var v=o[k];if(v&&typeof v.toMillis==='function')o[k]=v.toMillis()});o.id=d.id;return o}
 function stopAll(a){while(a.length){try{a.pop()()}catch(e){}}}
-function onErr(e){console.error(e);ui.cloudErr=(e&&e.code==='permission-denied')?'The database rules are not published yet, or this account is not allowed to see this.':'Could not reach the database. Check your internet.';softRender()}
+function onErr(e){ui.cloudErr=(e&&e.code==='permission-denied')?'This is not available right now. Please try again later.':'Could not connect. Check your internet and try again.';softRender()}
 function startPublic(){
   unsubPub.push(fs.doc('settings/main').onSnapshot(function(d){
     db.settings=Object.assign(defaults(),d.exists?d.data():{});if(d.exists&&!d.data().rounds)db.settings.rounds=0;fixRounds(db.settings);fixM(db.settings);db.settings.cycle='Every 10 days';if(!db.settings.opayNumber){db.settings.opayName=defaults().opayName;db.settings.opayNumber=defaults().opayNumber}
@@ -1039,7 +1039,7 @@ function doSpin0(){var sc=SC;
   requestAnimationFrame(function(){cv.style.transform='rotate('+theta+'deg)'});
   var commit=CLOUD?cloudSpin(m,pos):Promise.resolve();
   var wait=new Promise(function(r){setTimeout(r,6200)});
-  Promise.all([commit.then(function(){return null},function(e){console.error(e);return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){inS(sc,function(){
+  Promise.all([commit.then(function(){return null},function(e){return (e&&e.code)?e.code:(e||'fail')}),wait]).then(function(r){inS(sc,function(){
     var err=r[0];
     if(err){ui.spinning=false;toast(err==='closed'?'Spinning was just closed by the admin.':err==='nospin'?'You have no spins left.':err==='taken'?'That number was just taken. Spin again.':err==='permission-denied'?'Spin blocked by the database rules. Admin: republish the rules.':err==='unavailable'||err==='network-request-failed'?'No internet. Please try again.':'Spin could not be saved ('+err+'). Please try again.');render();return}
     if(!CLOUD){
